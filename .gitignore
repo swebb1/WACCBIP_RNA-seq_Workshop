@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+renv/library
+salmon*
+*RDS
+*rds
+

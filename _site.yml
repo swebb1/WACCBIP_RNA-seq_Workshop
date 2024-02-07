@@ -1,0 +1,15 @@
+name: "RNA-seq Analysis Workshop"
+navbar:
+  title: "RNA-seq Analysis Workshop"
+  left:
+    - text: "Command line analysis"
+      href: lesson1_command_line.html
+    - text: "Automated analysis with NextFlow"
+      href: lesson2_nextflow.html
+    - text: "Differential expression"
+      href: lesson3_deseq.html
+output_dir: "."
+output:
+  html_document:
+    theme: yeti
+    highlight: textmate

@@ -1,0 +1,800 @@
+---
+title: "Differential expression with DESeq2"
+output: 
+  html_document:
+    df_print: paged
+    css: "style.css"
+    toc: true
+    toc_depth: 2
+---
+
+<head>
+<script src="https://kit.fontawesome.com/ece750edd7.js" crossorigin="anonymous"></script>
+</head>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+<div class="objectives">
+<h2><i class="far fa-check-square"></i> Learning Objectives</h2>
+ * Install the DESeq2 package for use in R and RStudio
+ * Create a sample sheet for your differential expression analysis
+ * Import transcript abundance data from Salmon into a DESeq2 object
+ * Run differential expression analysis with DESeq2
+ * Assess replicate and sample groups (PCA plots and hierarchical clustering)
+ * Extract and visualise results (MA plots, scatter plots, volcano plots)
+ * Search for enriched functional annotations in differentially expressed genes (GO terms, gProfiler2)
+</div>
+<br>
+
+----
+
+## 1. Getting Started
+
+Differential expression (DE) analysis is commonly performed downstream of RNA-seq data analysis and quantification. We use statistical methods to test for differences in expression of individual genes between two or more sample groups. In this lesson, we will use the statistical programming language [R](https://www.r-project.org/) and the [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) package, specifically designed for differential expression analysis.
+
+### R and RStudio
+
+R is an extremely powerful programming language for working with large datasets, applying statistical tests and creating publication ready graphics. [RStudio](https://www.rstudio.com/) is an Integrated Development Environment (IDE) for R which provides a graphical and interactive environment for R programming.
+
+We recommend that you understand the basics of R and RStudio and follow at least the *getting started* and *R and RStudio* lessons in our [introduction to R workshop](https://swebb1.github.io/R_Training/index.html). This will also guide you through how to install R and RStudio on your own machine.
+
+You can choose to run RStudio on your own laptop or log into our [RStudio server](https://bifx-rstudio.bio.ed.ac.uk) on the bioinformatics servers.
+
+----
+
+### Installing DESeq2
+
+DESeq2 is part of the Bioconductor repository of biology specific R packages. You can install DESeq2 using the Bioconductor manager with the code below in the R Console. We will also use several other R libraries.
+
+```{r,eval=F,warning=F,message=F}
+## Install Bioconductor packages
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("DESeq2")
+BiocManager::install("tximeta")
+BiocManager::install("apeglm")
+BiocManager::install("clusterProfiler")
+BiocManager::install("org.Hs.eg.db")
+
+## Install CRAN packages
+install.packages("tidyverse")
+install.packages("RColorBrewer")
+install.packages("gprofiler2")
+install.packages("pheatmap")
+```
+
+----
+
+### Create a project
+
+Use the project drop-down menu at the top right to create a new project called *Differential expression workshop* or something similar and choose an appropriate working directory.
+
+----
+
+### Input data
+
+DESeq2 works with matrices of *read counts* per gene for multiple samples. In the past we used read counting software like [HTSeq-count](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [featureCounts](http://bioinf.wehi.edu.au/featureCounts/) to quantify counts of aligned reads (e.g. from STAR) over exons for each gene model. The standard practice now is to use *pseudocounts* from tools like **Salmon** which do a much better job at estimating expression levels by:
+
+* Correcting for sequencing biases e.g. GC content
+* Correcting differences in individual transcript lengths
+* Including reads that map to multiple genes
+* Producing much smaller output files than aligners
+
+DESeq2 requires non-normalised or “raw” count estimates at the gene-level for performing DE analysis. We will use the R package **tximport** to import read counts and summarise transcript abundance estimates for each gene.
+
+In the previous lessons we generated tables of transcript abundances (`quant.sf`) for each sample with Salmon, using a reduced set of RNA-seq sequencing reads. As input to DESeq2 we will use similar tables generated from the full dataset.
+
+Download and extract the data folder:
+```{r,eval=F,warning=F,message=F}
+download.file("https://bifx-core3.bio.ed.ac.uk/training/RNA-seq_analysis/salmon.tar.gz","salmon.tar.gz",method="curl",extra=c("--insecure"))
+untar("salmon.tar.gz")
+```
+
+----
+
+### Experimental design
+
+We will also include a further two samples from the original publication which correspond to a **MOV10 knock-down** cell line using siRNA. We will use this data to investigate changes in transcription upon perturbation of MOV10 expression relative to the control (irrelevant siRNA) experiment.
+
+| Dataset | Description |
+| ------- | ----------- |
+| Control_1 | Control, replicate 1 |
+| Control_2 | Control, replicate 2 |
+| Control_3 | Control, replicate 3 |
+| MOV10_OE_1 | MOV10 over-expression, replicate 1 |
+| MOV10_OE_2 | MOV10 over-expression, replicate 2 |
+| MOV10_OE_3 | MOV10 over-expression, replicate 3 |
+| MOV10_KD_2 | MOV10 knock-down, replicate 2 |
+| MOV10_KD_3 | MOV10 knock-down, replicate 3 |
+
+MOV10 is an RNA helicase reported to associate with FMR1, a protein found in the brain and linked to fragile X syndrome. 
+
+----
+
+### Notes on experimental design
+
+DESeq2 and other differential expression tools perform statistical analysis by comparing mean expression levels between sample groups. Accurate mean estimates can only be achieved with precise estimates of the biological variation between independent samples.
+
+In DE experiments, increasing the number of **biological replicates** is generally more desirable than increasing read depth in single samples, unless you are particularly interested in rare RNAs. DESeq2 will not work if a sample group only has one replicate and it is recommended to have at least 3.
+
+If you have **technical replicates** in your experimental design, these should be merged into one sample to represent a single biological replicate.
+
+We also need to ensure (as much as possible) that any effect we see between groups can be attributed to differences in biology rather than **confounding factors** in the design or **batch effects** introduced at the library preparation stage.
+
+<br>
+<div class="resources">
+<h2><i class="fas fa-book"></i> Further Learning</h2>
+Read this document on [experimental design considerations](https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/experimental_planning_considerations.html) in differential expression analysis.
+</div>
+<br>
+
+----
+
+### The DESeq2 method
+
+DESeq2 performs statistical analysis of un-normalised raw/estimated read count data per gene. It uses a **median of ratios** normalisation method to account for differences in *sequencing depth* and *RNA composition* between samples.
+
+Count data is modeled using a generalised linear model based on the **negative binomial distribution**, with a fitted mean and a gene-specific **dispersion** parameter which describes the relationship between **variance** in the count data and the observed **mean**.
+
+The model *coefficient* represents the change in mean between sample groups giving us **log2 fold change** values per gene. By default, DESeq2 performs the *Wald* test to test for significant changes in gene expression between sample groups and generate p-values which are then adjusted for multiple testing.
+
+DESeq2 has internal methods for:
+
+* Estimating size factors (sample normalisation)
+* Estimating dispersions
+* Fitting the negative binomial GLM (log2 fold changes)
+* Filtering outliers and low count genes
+* Statistical tests between sample groups (p-values)
+* Multiple testing correction (FDR adjusted p-value)
+
+<img src="images/DESeq2.png" width=300,align="center">
+
+----
+
+### Comprehensive tutorials
+
+This is a *lightweight* introduction to differential expression analysis. For a comprehensive overview of the DESeq2 method, functionality and complex experimental designs, check out the following resources:
+
+* [DESeq2 tutorial](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html)
+* [RNAseq analysis with DESeq2](http://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html)
+* [HBC Differential expression workshop](https://hbctraining.github.io/DGE_workshop_salmon_online/schedule/links-to-lessons.html)
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Setup R and RStudio and install required packages
+ * Download the required datasets
+ * Understand considerations for experimental design
+ * Understand an overview of the DESeq2 methodology
+</div>
+<br>
+
+----
+
+## 2. Create a sample file
+
+The first step in our analysis is to create a tab separated file of sample IDs and metadata. This already exists in the folder you downloaded earlier but you would normally create this manually. We can then import the sample sheet to R with the `read_tsv()` function from **readr**.
+
+```{r,warning=FALSE,message=FALSE}
+library(tidyverse)
+ss<-read_tsv("salmon/samples.tsv",col_names = T,col_types = "fff")
+ss
+```
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * The sample file should contain metadata on each sample
+ * It is important to include all known variables that could confound results or explain technical variance
+</div>
+<br>
+
+----
+
+## 3. Importing count data with tximeta
+
+We will start by importing the count data for each sample into R. We will use the package [**tximeta**](https://bioconductor.org/packages/tximeta) to read the Salmon output files and create a matrix of read counts for each gene. This package automatically recognises if your count data comes from a commonly used genome and will download and add annotation files. Alternatively, you can use [**tximport**](https://bioconductor.org/packages/3.15/tximport).
+
+
+```{r,warning=FALSE,message=FALSE}
+library(DESeq2)
+library(tximeta)
+
+## tximeta expects a table with at least 2 columns (names and files). We will also add the Group and Replicate.
+coldata<-ss %>% dplyr::select(names=Sample,condition=Group,replicate=Replicate) %>%
+  mutate(files=file.path("salmon", ss$Sample, "quant.sf"))
+```
+
+```{r}
+## Read in Salmon counts with tximeta - this creates an object of type summarizedExperiment
+se<-tximeta(coldata)
+se
+```
+
+The [summarizedExperiment](https://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html) object in R contains a matrix of count data with sample names as columns and *features* as rows. It can also hold metadata and annotation data. At the moment our counts are per-transcript but DESeq2 works on a per-gene level. We can summarise our counts into genes with the *summarizeToGene* function in **tximeta** and **tximport**.
+
+```{r}
+gse<-summarizeToGene(se)
+gse
+```
+
+Compare the number of rows in `se` and `gse`. You can access data within a *summarizedExperiment* object with accessor functions such as `colData()`, `rowRanges()` and `assay()`.
+
+Now that we have per-gene count data in a *summarizedExperiment* object, we can import this into DESeq2. We need to supply the `gse` object we have just created as well as a *design*.
+
+The simplest design is just to compare our samples by the condition column (Control, MOV10_KD, MOV10_OE). The design is a *formula* in R so is preceded with the `~` character. 
+
+<br>
+<div class="resources">
+<h2><i class="fas fa-book"></i> Further Learning</h2>
+Have a look at these resources for advice on complex experimental designs (e.g. multiple variables of interest, interaction terms, time-course analysis:
+
+* [DESeq2 manual](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#variations-to-the-standard-workflow)
+* [Time-course analysis example](http://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#time-course-experiments)
+* [Likelihood ratio test](https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/08a_DGE_LRT_results.html) for measuring changes across multiple sample groups at once.
+</div>
+<br>
+
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Import pseudo-count data into R with **tximeta** or **tximport**
+ * DESeq2 expects gene-level counts
+ * Summarise transcript counts to gene counts
+</div>
+<br>
+
+----
+
+## 4. Creating a DESeq object and running DESeq
+
+```{r}
+## Create the DESeq dataset object
+dds <- DESeqDataSet(gse, design = ~ condition)
+dds
+```
+
+The condition column is represented in R as a *factor*, or categorical variable, which has *levels*.
+
+```{r}
+levels(dds$condition)
+```
+By default, the levels are set in alphabetical order and DESeq2 will always assume that the first level is your control group to which it will compare datasets. In this case we are okay, otherwise you will need to *relevel* your condition column or explicitly reference the condition comparisons of interest in your results (see below).
+
+Let's create a list of comparisons, known as contrasts, that we want to look at. Here we will put our *base-level* or control sample last. We will also set a few other variables to help name our outputs.
+
+```{r}
+contrasts<-list(c("condition","MOV10_OE","Control"),
+           c("condition","MOV10_KD","Control"))
+
+## As well as contrasts, DESeq also uses coefficients to name results. We can create these from our specified contrasts
+coefficients<-contrasts %>% map(~paste(.x[1],.x[2],"vs",.x[3],sep = "_")) %>% unlist()
+
+## Simple project ID
+project="MOV10"
+
+## Labels for QC plots - we can add all possible confounding factors from our colData
+labels= c("condition","replicate")
+## Merge colData into label names in a data frame
+cnames <- colData(dds) %>% 
+  as_tibble() %>% 
+  unite(all_of(labels), col = label, sep = "-") %>% 
+  pull(label)
+
+## Thresholds for p-value and fold change to filter and summarise results later
+padj_thresh = 0.05
+l2fc_thresh = 0 ## Just include all significant genes here
+  
+```
+
+Now we are ready to run DESeq. The DESeq function has internal methods to:
+
+* **Estimate size factors** to normalise gene counts per sample
+* **Estimate gene-wise dispersions** to measure variance in the dataset
+* **Shrink gene-wise dispersions** to improve the dispersion estimates
+* **Fit a *negative binomial* statistical model** to the data
+* **Perform statistical testing** with the *Wald Test* or *Likelihood Ratio Test*
+
+
+```{r}
+## run DESeq
+dds <- DESeq(dds)
+## save dds object as a file - saveRDS can save R objects
+saveRDS(dds,file =paste0(project,".dds.RDS"))
+```
+
+----
+
+### Plot dispersions
+
+It can be useful to plot the gene-level dispersion estimates to ensure the DESeq model is right for your data. You should find that dispersion is generally lower for genes with higher read counts, that final dispersion levels have been shrunk towards the fitted model and that a few outliers exist which have not been shrunk. If the red line is not a good generalisation for your data then DE analysis with DESeq2 may not be appropriate.
+
+
+```{r}
+#Plot dispersions
+plotDispEsts(dds, main="Dispersion plot")
+```
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Create a DESeq dataset from count data
+ * Understand the DESeq *design* parameter
+ * Run the `DESeq` function and understand the internal steps
+ * Plot **dispersions** to assess the fitted model
+</div>
+<br>
+
+----
+
+## 5. DESeq quality control
+
+Before we look at the results of differential expression tests we first want to perform some quality control by visualising and assessing the entire dataset. The raw counts are not optimal for visualisation and clustering so we will apply a *regularised log transformation* which reduces the bias from genes with extremely low and high counts. The `rld()` function can take a while to run with large datasets.
+
+```{r}
+## Log transformed data
+rld <- rlog(dds, blind=F)
+saveRDS(rld,file =paste0(project,".rld.RDS"))
+```
+
+<br>
+<div class="resources">
+<h2><i class="fas fa-book"></i> Further Learning</h2>
+You can read more on DESeq2 data transformations [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#data-transformations-and-visualization).
+</div>
+<br>
+
+----
+
+### Heatmap of Sample Distances
+
+We can use our transformed data to perform sample clustering. Here, we calculate sample *distances* with the `dist()` function applied to the transpose of the transformed count matrix. A heatmap of this distance matrix gives us an overview of similarities and dissimilarities between samples. 
+
+We have to provide a hierarchical clustering `hc` to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.
+
+```{r}
+library("pheatmap") #  heatmap plotting package
+library("RColorBrewer") # colour scales
+
+sampleDists <- dist(t(assay(rld)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- as.list(cnames)
+colnames(sampleDistMatrix) <- as.list(cnames)
+cols <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255) ## Set a colour pallette in shades of blue
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=cols)
+```
+
+----
+
+### Principle Component Analysis
+
+Another way to visualize sample-to-sample distances is a principal components analysis (PCA). In this method, the data points (here, the samples) are projected onto a 2D plane such that they spread out in the two directions that explain most of the variation in the data. 
+
+The x-axis is the direction that separates the data points the most. The values of the samples in this direction are written PC1 (principle component 1). The y-axis is a direction that separates the data the second most, PC2. The percent of the total variance that is contained in each direction is printed on the axis label. Note that these percentages do not add to 100%, because there are more dimensions that contain the remaining variance. 
+
+We expect to see our samples divide by their biological *condition* or some other source of variation that we are aware of (e.g. sex, cell type, batches of library preparation etc). If you do not see your samples separating by your variable of interest you may want to plot out PC3 and PC4 to see if it appears there. If there is a large amount of variance introduced by other factors or batch effects then you will need to control for these in your experimental design. See the DESeq2 vignette for more details.
+
+We will run the PCA analysis with the DESeq2 command `plotPCA()`.
+
+```{r}
+## Principle component analysis - get the PCA data
+plotPCA(rld, intgroup=c(labels[1],labels[length(labels)]))
+```
+
+If we don't like the default plotting style we can ask `plotPCA` to return the data only and create our own custom plot. Below, we use **ggplot**, a sophisticated plotting package in R. For more on ggplot, refer to our [introduction to R workshop](https://swebb1.github.io/R_Training/index.html).
+
+```{r}
+## Principle component analysis - get the PCA data
+pca<-plotPCA(rld, intgroup=c(labels[1],labels[length(labels)]),returnData=T)
+
+## Plot with ggplot
+ggplot(pca,aes(PC1,PC2,colour=condition,shape=replicate)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  theme(legend.key = element_blank()) + 
+  xlab(paste("PC1:",round(attr(pca,"percentVar")[1]*100),"%")) + 
+  ylab(paste("PC1:",round(attr(pca,"percentVar")[2]*100),"%"))
+
+```
+
+----
+
+### Heatmap of genes with the largest variance
+
+It may also be useful to take an initial look at the genes with the highest amount of variation across the dataset. We should expect to see some genes which appear to be differentially expressed between sample groups.
+
+```{r}
+## Get the top 20 genes after ordering the rld counts by variance
+topVarGenes <- head(order(-rowVars(assay(rld))),20)
+## Create a matrix from these genes only
+mat <- assay(rld)[topVarGenes, ] 
+anno<-as.data.frame(colData(dds)[,labels])
+pheatmap(mat,cluster_rows = F,cluster_cols = F,show_rownames = T,scale="row",annotation_col = anno)
+```
+
+<br>
+<div class="discussion">
+<h2><i class="far fa-bell"></i> Discussion</h2>
+Can you guess which gene has the Ensembl identifier ENSG00000155363?
+</div>
+<br>
+
+----
+
+### Plot Individual Gene Counts
+
+In certain cases like ours, where we know the expression levels of particular genes should change between sample groups, we may want to plot individual gene counts. Let's plot normalised gene counts for the MOV10 gene (ENSG00000155363).
+
+```{r}
+## Get normalised counts for a single gene
+gene="ENSG00000155363"
+geneData <- plotCounts(dds, gene=gene, intgroup=labels, returnData=TRUE,normalized = T)
+
+## Plot with ggplot
+ggplot(geneData, aes_string(x=labels[1], y="count",fill=labels[length(labels)])) + 
+  scale_y_log10() + 
+  geom_dotplot(binaxis="y", stackdir="center") + 
+  theme_bw() + 
+  theme(legend.key = element_blank()) + 
+  ggtitle(gene) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Transform count data for summary plots
+ * Create summary plots and assess for QC
+     * PCA
+     * Clustering by sample distance
+     * Heatmaps of gene counts
+     * Individual gene counts
+</div>
+<br>
+
+----
+
+## 6. Extract DESeq2 results
+
+If we are happy with our QC assessment we can retrieve results from the DESeq object and visualise fold changes between specific comparisons.
+
+DESeq2 has a `results()` function which by default will print the results of the last variable in your formula, comparing the last level of this variable with your base-level. In our case this is the conditions MOV10_OE vs Control.
+
+```{r}
+results(dds)
+```
+
+However, the `dds` object stores several results. You can see these with the function `resultsNames()`. 
+
+```{r}
+resultsNames(dds)
+```
+
+The Intercept result is a statistical model that compares gene expression to 0 so is not relevant here. We can see that we have results for both of our MOV10 perturbation experiments vs the control.
+
+We can extract a specific result by providing arguments to the `results()` function. Let's look at the first comparison in our list, **MOV10_OE vs Control**.
+
+```{r}
+res<-results(dds,contrast = contrasts[[1]])
+res
+```
+
+The results table includes several columns:
+
+* baseMean = Mean number of counts from all samples
+* log2FoldChange = Log2 of the fold change in normalised counts between sample groups in the contrast
+* lfcSE = Standard error of the log2 fold change
+* stat = The test statistic (Wald test in this case)
+* pvalue = The pvalue / significance level
+* padj = The pvalue adjusted for multiple testing
+
+----
+
+### Multiple testing correction and independent filtering
+
+The two most important columns in our results table are **log2FoldChange**, which is the effect size and tells us how much a gene's expression has changed, and **padj** which gives us the level of statistical significance. DESeq2 reports adjusted p-values (padj) which are corrected for **multiple testing**. We should use these values, **not the pvalue column**, to filter or call significant genes.
+
+DESeq2 uses the Benjamini-Hochberg method to adjust p-values and control the false discovery rate. So, if you were to filter for genes with a padj<=0.05 you would expect 5% of these to be false positives.
+
+If you inspect the result table you may notice that some genes have padj and/or pvalue set to NA. This is because the `results()` function performs filtering of genes to reduce the total number of genes tested and increase the likelihood of finding significant genes after the multiple testing correction. The more genes we test, the larger the multiple testing correction, so it makes sense to remove genes where we are unlikely to see a statistical effect:
+
+* Genes with zero counts in all samples
+* Genes with extreme outliers
+* Genes with extremely low normalised counts
+
+Let's look at a summary of our results. We will also set an **alpha** to tell DESeq which significance threshold to use when summarising results:
+
+```{r}
+summary(res,alpha=padj_thresh)
+```
+
+This is great, we definitely have significant differentially expressed genes!
+
+----
+
+### Log Fold Change Shrinkage
+
+Let's take a look at these results visually. DESeq2 provides a `plotMA()` function to create MA plots(log2FoldChange vs the mean of normalised counts), a common way to visualise DE genes.  
+
+```{r}
+plotMA(res)
+```
+
+Significant genes (<=0.05 padj) appear in blue, while non-significant genes are grey. We can immediately see that genes with low counts have much larger variation in log-fold changes. DESeq2 provides the `LFCshrink()` to shrink the fold change estimates and reduce the "noise" from these genes. We can use it instead of the `results()` function and these shrunken fold changes are much better for visualising and ranking our data.
+
+```{r}
+library(apeglm)
+resLFC<-lfcShrink(dds,coef = coefficients[1],type="apeglm")
+summary(resLFC,alpha=padj_thresh)
+```
+
+We can see that the number of significant genes is unaffected. Let's create a new MA plot.
+
+```{r}
+plotMA(resLFC)
+```
+
+You should see how the shrunken fold changes will be more useful for downstream analysis of the data.
+
+----
+
+### Create result tables for each of our comparisons
+
+Before moving on, we are going to create result tables for each of the comparisons we are interested in. We will also order these by *padj* so the most significant genes are on top.
+
+```{r}
+## Map each of our coefficients to the lfcShrink function
+result_list<-coefficients %>% map(~lfcShrink(dds,coef = .x,type = "apeglm"))
+    
+names(result_list) = coefficients
+result_list
+```
+
+----
+
+### Formatting and annotating results
+
+We will apply a bit of formatting to our results table and also add some annotations.
+
+* Convert to a format where we can use **tidyverse** verbs
+* Move the rownames to a **geneID** column
+* Add a **threshold** column for genes we wish to label as significant
+* Order each table by padj so significant genes are at the top
+
+```{r}
+result_list2<-result_list %>% 
+  map(~as.data.frame(.x) %>% 
+        rownames_to_column("geneID") %>% 
+        mutate(threshold=case_when(padj<=padj_thresh & abs(log2FoldChange)>=l2fc_thresh~"Significant",T~"Not Significant")) %>% 
+        arrange(padj) %>% 
+        as_tibble()
+  )
+result_list2
+```
+
+Our result table contains Ensembl gene identifiers but we may want to add more annotations like the gene name and biotype. We can fetch Ensembl annotations from the R package **AnnotationHub**. Let's search for the right database first.
+
+```{r,warning=FALSE,message=FALSE}
+library(AnnotationHub)
+ah<-AnnotationHub() ## create a link to the annotation hub
+query(ah,c("EnsDb","106","Homo")) ##Search annotationHub for Ensembl 106 annotation database
+```
+
+You should find the annotation hub ID for the Ensembl v106 humand ensdb object (AH100643). We actually downloaded this earlier with **tximeta**.
+
+We can then extract gene-level annotations:
+
+```{r}
+edb<-ah[["AH100643"]] ##Load the the ensembldb object
+
+## Extract a table of gene annotations 
+genes<-genes(edb,return.type = "data.frame") %>% 
+  dplyr::select(gene_id,gene_name,gene_biotype,entrezid) %>% 
+  as_tibble()
+
+genes
+```
+
+This looks good but there is something weird about the *entrezid* column. It actually contains lists of multiple IDs for some Ensembl identifiers. The entrez IDs and Ensembl IDs do not always have a 1-to-1 relationship. To resolve this we will just select the first in each list.
+
+```{r}
+genes$entrezid <- map(genes$entrezid,1) %>% unlist()
+genes
+```
+Now we can merge our result tables with the annotations to add extra columns:
+
+```{r}
+## Map all result lists to a function that joins with the anno data
+result_list_anno<-result_list2 %>% 
+  map(~left_join(x=.x,y=genes,by=c("geneID"="gene_id")) %>% 
+        mutate(gene_biotype=as.factor(gene_biotype))) ## biotype as a factor
+```
+
+We will now save these results tables to text files so we can use them outside of R if required. We can create a folder for each of our results.
+
+```{r,warning=FALSE,message=FALSE,eval=F}
+## Map each of our result names to a function that saves each table in our results_list
+names(result_list_anno) %>% map(function(x){
+  dir.create(x)
+  write_tsv(result_list_anno[[x]],paste0(x,"/DEseq_result.tsv"),col_names = T)
+})
+```
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Extract results for individual contrasts
+ * Create MA plots
+ * Shrink log2 fold change estimates
+ * Add annotations to result tables
+</div>
+<br>
+
+----
+
+## 7. Visualise DESeq2 results
+
+We have already seen the MA plot but there are many other methods for plotting DESeq2 results. We cover some popular visualisations below. 
+
+----
+
+### Volcano plots
+
+Let's try a **volcano plot**, another popular visualisation for DE analysis. Here we are plotting the log fold change on the x-axis against the negative log of our p-values, so that significant genes appear at the top of the plot. We can then see the spread of fold changes in each direction in our set of significant genes.
+
+```{r,warning=FALSE,message=FALSE}
+ggplot(result_list_anno[[1]],aes(log2FoldChange,-log10(padj),colour=threshold)) + 
+  geom_point() + 
+  theme_bw() + 
+  ggtitle(coefficients[1])  +
+  theme(legend.key = element_blank())
+```
+
+We can even use ggplot to label some of our genes. Let's select five genes with the lowest adjusted pvalues.
+
+```{r}
+library(ggrepel)
+topFive<-result_list_anno[[1]] %>% head(n=5)
+ggplot(result_list_anno[[1]],aes(log2FoldChange,-log10(padj),colour=threshold)) + 
+  geom_point() + 
+  geom_text_repel(data=topFive,aes(label = gene_name))+
+  theme_bw() + 
+  ggtitle(coefficients[1])  +
+  theme(legend.key = element_blank())
+```
+
+----
+
+### Plots of DE genes by biotype
+
+If we are interested in more than just protein coding genes, we could take a look at the types of RNAs which are represented in our list of DE genes.
+
+First, let's filter our results for genes which pass our threshold for differential expression.
+
+```{r}
+## Get a list of significant DEGs
+sig_genes<-result_list_anno[[1]] %>% dplyr::filter(threshold=="Significant")
+
+## Plot barplot of gene_biotype
+ggplot(sig_genes,aes("Significant genes",fill=gene_biotype)) +
+  geom_bar() + 
+  theme_bw() + 
+  xlab("") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+```
+
+----
+
+### Heatmaps of genes with largest changes
+
+Now that we have our results, we can use the log normalised counts we created earlier to plot heatmaps of genes with the largest changes.
+
+```{r}
+## Out of all significant genes, get the 50 with the largest fold change in either direction in MOV10_OE relative to the control
+top50<-result_list_anno[[1]] %>% 
+  dplyr::filter(threshold=="Significant") %>% 
+  arrange(abs(log2FoldChange)) %>% 
+  head(n=50) %>% 
+  pull(geneID)
+
+## Create a matrix of rld counts and plot the heatmap
+mat<-assay(rld)[top50,]
+colors <- colorRampPalette( rev(brewer.pal(9, "RdBu")) )(255)
+pheatmap(mat,color=colors,scale = "row",cluster_rows = T,cluster_cols = T,annotation_col = anno)
+```
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * There are many ways to summarise and visualise DE results
+ * Get creative!
+</div>
+<br>
+
+----
+
+## 8. Functional enrichment of genes
+
+We can perform enrichment analyses to see if there are any functional annotations common to our DE genes that may imply something about the function of MOV10.
+
+In these examples we will use all of our significant genes. However, in some cases it may be more appropriate to look at genes that are differentially expressed in one direction.
+
+The **clusterProfiler** package has functions for enrichment analysis and plotting gene annotations. To perform the enrichment analysis, we need a list of background genes and a list of significant genes. For our background dataset we will use all genes tested for differential expression (all genes in our results table).
+
+The *enrichGO* function looks for gene ontology terms that are over-represented in the list of significant genes. We will look at the *Biological Process (BP)* terms only.
+
+```{r,warning=FALSE,message=FALSE,fig.height=1200}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+## Run the GO enrichment 
+ego <- enrichGO(gene          = sig_genes$geneID,
+                universe      = result_list_anno[[1]]$geneID,
+                OrgDb         = org.Hs.eg.db,
+                keyType       = "ENSEMBL",
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+head(ego)
+```
+
+```{r}
+## Plot the top enriched terms
+dotplot(ego, showCategory=20)
+```
+
+<div class="resources">
+<h2><i class="fas fa-book"></i> Further Learning</h2>
+**clusterProfiler** also provides methods to query pathway databases such as KEGG. You can find out more in the [documentation](https://bioconductor.org/packages/release/bioc/vignettes/clusterProfiler/inst/doc/clusterProfiler.html).
+</div>
+<br>
+
+----
+
+### g:Profiler
+
+The package **gprofiler2** is a wrapper for the online tool g:Profiler and looks at many different databases at once including GO, KEGG and transcription factor motifs. g:Profiler performs functional enrichment analysis of gene lists using Ensembl identifiers.
+
+```{r,warning=FALSE,message=F}
+library(gprofiler2)
+## Get a table of enriched terms with the gost function - this accepts Ensembl gene IDs
+gp<-gost(query = sig_genes$geneID,organism = "hsapiens", ordered_query = FALSE,multi_query = FALSE, significant = TRUE, exclude_iea = TRUE, user_threshold = 0.05, correction_method = "g_SCS", domain_scope = "annotated")
+
+## Inspect the output, the "term_name" column is the enriched term and the "source" tells us which database it belongs to. 
+gp$result
+```
+
+<br>
+<div class="key-points">
+<h2><i class="fas fa-thumbtack"></i> Key points:</h2>
+##
+ * Bioconductor has many packages for functional enrichment analysis
+ * Find annotation terms that are statistically over-represented in lists of significant DEGs
+ * Test for terms in genes going up, down and in either direction relative to the reference sample 
+</div>
+<br>
+
+<div class="challenge">
+<h2><i class="fas fa-pencil-alt"></i> Challenge:</h2>
+See if you can produce similar visual outputs and summaries of results for the MOV10_KD_vs_Control comparison.
+</div>
+<br>
+
+
+
+
+
+
