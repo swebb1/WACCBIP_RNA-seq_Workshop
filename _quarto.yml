@@ -8,7 +8,8 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
+      - text: "Command line analysis"
+        href: lesson1_command_line.qmd
 
 format:
   html:
