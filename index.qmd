@@ -1,11 +1,50 @@
 ---
-title: "WACCBIP_RNA-seq_workshop"
+title: "WACCBIP RNA-seq workshop"
 ---
 
-This is a Quarto website.
+<head>
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-```{r}
-1 + 1
+```{=html}
+<script src="https://kit.fontawesome.com/ece750edd7.js" crossorigin="anonymous"></script>
 ```
+</head>
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+------------------------------------------------------------------------
+
+This is the homepage for the RNA-seq analysis course for biologists at the University of Edinburgh.
+
+<br>
+
+![](images/logo.png)
+
+</br>
+
+This workshop is designed as an introduction to RNA-seq data analysis and will guide you through the following steps:
+
+### RNA-seq analysis on the command line
+
+-   Assessing raw sequence data and performing quality control
+-   Aligning sequence reads to a reference genome
+-   Filtering alignments for further analysis
+-   Assessing the quality of your RNA-seq experiment
+-   Visualising alignments on a genome browser
+-   Quantifying expression levels
+
+### Differential expression analysis with DESeq2
+
+-   Load transcript abundance files into R
+-   Run DESeq2 and visualise results
+-   Extract differentially expressed genes
+-   Visualise differentially expressed genes
+
+There is no such thing as a default pipeline. Although we mostly use standard parameters in this tutorial we hope to make you aware of the considerations you should take at each step. Make sure you understand your data and where it has come from. Use the correct tools for your dataset and read the tool documentation to see how different parameters affect your output!
+
+This workshop is partly modeled on the training materials already provided by the [Harvard Chan Bioinformatics Core](https://hbctraining.github.io/main/). Please check out their website for comprehensive training materials in RNA-seq, NGS analysis and bioinformatics.
+
+------------------------------------------------------------------------
+
+For more information contact [Shaun Webb](mailto:shaun.webb@ed.ac.uk).

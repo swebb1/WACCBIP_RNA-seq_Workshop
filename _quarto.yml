@@ -3,13 +3,16 @@ project:
   output-dir: docs
 
 website:
-  title: "WACCBIP_RNA-seq_workshop"
+  title: "WACCBIP RNA-seq workshop"
   navbar:
+    logo: "images/logo.png"
     left:
       - href: index.qmd
         text: Home
       - text: "Command line analysis"
         href: lesson1_command_line.qmd
+      - text: "Differential expression"
+        href: lesson2_DESeq2.qmd
 
 format:
   html:

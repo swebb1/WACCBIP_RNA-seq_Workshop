@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.269">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>WACCBIP RNA-seq workshop - Differential Expression with DESeq2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./images/logo.png" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">WACCBIP RNA-seq workshop</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html">
+ <span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./lesson1_command_line.html">
+ <span class="menu-text">Command line analysis</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./lesson2_DESeq2.html" aria-current="page">
+ <span class="menu-text">Differential expression</span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link active" data-scroll-target="#getting-started">1. Getting Started</a>
+  <ul class="collapse">
+  <li><a href="#r-and-rstudio" id="toc-r-and-rstudio" class="nav-link" data-scroll-target="#r-and-rstudio">R and RStudio</a></li>
+  <li><a href="#installing-deseq2" id="toc-installing-deseq2" class="nav-link" data-scroll-target="#installing-deseq2">Installing DESeq2</a></li>
+  <li><a href="#create-a-project" id="toc-create-a-project" class="nav-link" data-scroll-target="#create-a-project">Create a project</a></li>
+  <li><a href="#input-data" id="toc-input-data" class="nav-link" data-scroll-target="#input-data">Input data</a></li>
+  <li><a href="#experimental-design" id="toc-experimental-design" class="nav-link" data-scroll-target="#experimental-design">Experimental design</a></li>
+  <li><a href="#notes-on-experimental-design" id="toc-notes-on-experimental-design" class="nav-link" data-scroll-target="#notes-on-experimental-design">Notes on experimental design</a></li>
+  <li><a href="#the-deseq2-method" id="toc-the-deseq2-method" class="nav-link" data-scroll-target="#the-deseq2-method">The DESeq2 method</a></li>
+  <li><a href="#comprehensive-tutorials" id="toc-comprehensive-tutorials" class="nav-link" data-scroll-target="#comprehensive-tutorials">Comprehensive tutorials</a></li>
+  </ul></li>
+  <li><a href="#create-a-sample-file" id="toc-create-a-sample-file" class="nav-link" data-scroll-target="#create-a-sample-file">2. Create a sample file</a></li>
+  <li><a href="#importing-count-data-with-tximport" id="toc-importing-count-data-with-tximport" class="nav-link" data-scroll-target="#importing-count-data-with-tximport">3. Importing count data with tximport</a></li>
+  <li><a href="#creating-a-deseq-object-and-running-deseq" id="toc-creating-a-deseq-object-and-running-deseq" class="nav-link" data-scroll-target="#creating-a-deseq-object-and-running-deseq">4. Creating a DESeq object and running DESeq</a>
+  <ul class="collapse">
+  <li><a href="#plot-dispersions" id="toc-plot-dispersions" class="nav-link" data-scroll-target="#plot-dispersions">Plot dispersions</a></li>
+  </ul></li>
+  <li><a href="#deseq-quality-control" id="toc-deseq-quality-control" class="nav-link" data-scroll-target="#deseq-quality-control">5. DESeq quality control</a>
+  <ul class="collapse">
+  <li><a href="#heatmap-of-sample-distances" id="toc-heatmap-of-sample-distances" class="nav-link" data-scroll-target="#heatmap-of-sample-distances">Heatmap of Sample Distances</a></li>
+  <li><a href="#principle-component-analysis" id="toc-principle-component-analysis" class="nav-link" data-scroll-target="#principle-component-analysis">Principle Component Analysis</a></li>
+  <li><a href="#heatmap-of-genes-with-the-largest-variance" id="toc-heatmap-of-genes-with-the-largest-variance" class="nav-link" data-scroll-target="#heatmap-of-genes-with-the-largest-variance">Heatmap of genes with the largest variance</a></li>
+  <li><a href="#plot-individual-gene-counts" id="toc-plot-individual-gene-counts" class="nav-link" data-scroll-target="#plot-individual-gene-counts">Plot Individual Gene Counts</a></li>
+  </ul></li>
+  <li><a href="#extract-deseq2-results" id="toc-extract-deseq2-results" class="nav-link" data-scroll-target="#extract-deseq2-results">6. Extract DESeq2 results</a>
+  <ul class="collapse">
+  <li><a href="#multiple-testing-correction-and-independent-filtering" id="toc-multiple-testing-correction-and-independent-filtering" class="nav-link" data-scroll-target="#multiple-testing-correction-and-independent-filtering">Multiple testing correction and independent filtering</a></li>
+  <li><a href="#log-fold-change-shrinkage" id="toc-log-fold-change-shrinkage" class="nav-link" data-scroll-target="#log-fold-change-shrinkage">Log Fold Change Shrinkage</a></li>
+  <li><a href="#create-result-tables-for-each-of-our-comparisons" id="toc-create-result-tables-for-each-of-our-comparisons" class="nav-link" data-scroll-target="#create-result-tables-for-each-of-our-comparisons">Create result tables for each of our comparisons</a></li>
+  <li><a href="#formatting-and-annotating-results" id="toc-formatting-and-annotating-results" class="nav-link" data-scroll-target="#formatting-and-annotating-results">Formatting and annotating results</a></li>
+  </ul></li>
+  <li><a href="#visualise-deseq2-results" id="toc-visualise-deseq2-results" class="nav-link" data-scroll-target="#visualise-deseq2-results">7. Visualise DESeq2 results</a>
+  <ul class="collapse">
+  <li><a href="#volcano-plots" id="toc-volcano-plots" class="nav-link" data-scroll-target="#volcano-plots">Volcano plots</a></li>
+  <li><a href="#plots-of-de-genes-by-biotype" id="toc-plots-of-de-genes-by-biotype" class="nav-link" data-scroll-target="#plots-of-de-genes-by-biotype">Plots of DE genes by biotype</a></li>
+  <li><a href="#heatmaps-of-genes-with-largest-changes" id="toc-heatmaps-of-genes-with-largest-changes" class="nav-link" data-scroll-target="#heatmaps-of-genes-with-largest-changes">Heatmaps of genes with largest changes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Differential Expression with DESeq2</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+
+<script src="https://kit.fontawesome.com/ece750edd7.js" crossorigin="anonymous"></script>
+
+<div class="objectives">
+<h2 class="anchored">
+<i class="far fa-check-square"></i> Learning Objectives
+</h2>
+<ul>
+<li>Install the DESeq2 package for use in R and RStudio</li>
+<li>Create a sample sheet for your differential expression analysis</li>
+<li>Import transcript abundance data from Salmon into a DESeq2 object</li>
+<li>Run differential expression analysis with DESeq2</li>
+<li>Assess replicate and sample groups (PCA plots and hierarchical clustering)</li>
+<li>Extract and visualise results (MA plots, scatter plots, volcano plots)</li>
+</ul>
+</div>
+<section id="getting-started" class="level2">
+<h2 class="anchored" data-anchor-id="getting-started">1. Getting Started</h2>
+<p>Differential expression (DE) analysis is commonly performed downstream of RNA-seq data analysis and quantification. We use statistical methods to test for differences in expression of individual genes between two or more sample groups. In this lesson, we will use the statistical programming language <a href="https://www.r-project.org/">R</a> and the <a href="https://bioconductor.org/packages/release/bioc/html/DESeq2.html">DESeq2</a> package, specifically designed for differential expression analysis.</p>
+<section id="r-and-rstudio" class="level3">
+<h3 class="anchored" data-anchor-id="r-and-rstudio">R and RStudio</h3>
+<p>R is an extremely powerful programming language for working with large datasets, applying statistical tests and creating publication ready graphics. <a href="https://www.rstudio.com/">RStudio</a> is an Integrated Development Environment (IDE) for R which provides a graphical and interactive environment for R programming.</p>
+<p>We recommend that you understand the basics of R and RStudio and follow at least the <em>getting started</em> and <em>R and RStudio</em> sections of the Introduction to R workshop. You can choose to run RStudio on your own laptop or log into the aabn <a href="http://aabn.ug.edu.gh/">RStudio server</a>.</p>
+</section>
+<section id="installing-deseq2" class="level3">
+<h3 class="anchored" data-anchor-id="installing-deseq2">Installing DESeq2</h3>
+<p>DESeq2 is part of the Bioconductor repository of biology specific R packages. You can install DESeq2 using the Bioconductor manager with the code below in the R Console. We will also use several other R libraries.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Install Bioconductor packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">require</span>(<span class="st">"BiocManager"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">"BiocManager"</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"DESeq2"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"tximeta"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"apeglm"</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Install CRAN packages</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"tidyverse"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"RColorBrewer"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"gprofiler2"</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pheatmap"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="create-a-project" class="level3">
+<h3 class="anchored" data-anchor-id="create-a-project">Create a project</h3>
+<p>Use the project drop-down menu at the top right to create a new project called <em>Differential expression workshop</em> or something similar and choose an appropriate working directory.</p>
+</section>
+<section id="input-data" class="level3">
+<h3 class="anchored" data-anchor-id="input-data">Input data</h3>
+<p>DESeq2 works with matrices of <em>read counts</em> per gene for multiple samples. In the past we used read counting software like <a href="https://htseq.readthedocs.io/en/release_0.11.1/count.html">HTSeq-count</a> or <a href="http://bioinf.wehi.edu.au/featureCounts/">featureCounts</a> to quantify counts of aligned reads (e.g.&nbsp;from STAR) over exons for each gene model. The standard practice now is to use <em>pseudocounts</em> from tools like <strong>Salmon</strong> which do a much better job at estimating expression levels by:</p>
+<ul>
+<li>Correcting for sequencing biases e.g.&nbsp;GC content</li>
+<li>Correcting differences in individual transcript lengths</li>
+<li>Including reads that map to multiple genes</li>
+<li>Producing much smaller output files than aligners</li>
+</ul>
+<p>DESeq2 requires non-normalised or “raw” count estimates at the gene-level for performing DE analysis. We will use the R package <strong>tximport</strong> to import read counts and summarise transcript abundance estimates for each gene.</p>
+<p>In the previous lessons we generated tables of transcript abundances (<code>quant.sf</code>) for each sample with Salmon, using a reduced set of RNA-seq sequencing reads. As input to DESeq2 we will use similar tables generated from the full dataset.</p>
+<p>To access these files:</p>
+<ul>
+<li><p>Open the <em>Terminal</em> window in RStudio</p>
+<ul>
+<li>This is a bash terminal on the server</li>
+</ul></li>
+<li><p>Link the data folder to your project folder using the Linux <code>ln</code> command</p>
+<ul>
+<li><code>ln -s /home2/swebb/training/RNA-seq_analysis/lesson_2/salmon .</code></li>
+</ul></li>
+</ul>
+</section>
+<section id="experimental-design" class="level3">
+<h3 class="anchored" data-anchor-id="experimental-design">Experimental design</h3>
+<p>We will also include a further two samples from the original publication which correspond to a <strong>MOV10 knock-down</strong> cell line using siRNA. We will use this data to investigate changes in transcription upon perturbation of MOV10 expression relative to the control (irrelevant siRNA) experiment.</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Dataset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Control_1</td>
+<td>Control, replicate 1</td>
+</tr>
+<tr class="even">
+<td>Control_2</td>
+<td>Control, replicate 2</td>
+</tr>
+<tr class="odd">
+<td>Control_3</td>
+<td>Control, replicate 3</td>
+</tr>
+<tr class="even">
+<td>MOV10_OE_1</td>
+<td>MOV10 over-expression, replicate 1</td>
+</tr>
+<tr class="odd">
+<td>MOV10_OE_2</td>
+<td>MOV10 over-expression, replicate 2</td>
+</tr>
+<tr class="even">
+<td>MOV10_OE_3</td>
+<td>MOV10 over-expression, replicate 3</td>
+</tr>
+<tr class="odd">
+<td>MOV10_KD_2</td>
+<td>MOV10 knock-down, replicate 2</td>
+</tr>
+<tr class="even">
+<td>MOV10_KD_3</td>
+<td>MOV10 knock-down, replicate 3</td>
+</tr>
+</tbody>
+</table>
+<p>MOV10 is an RNA helicase reported to associate with FMR1, a protein found in the brain and linked to fragile X syndrome.</p>
+</section>
+<section id="notes-on-experimental-design" class="level3">
+<h3 class="anchored">Notes on experimental design</h3>
+<p>DESeq2 and other differential expression tools perform statistical analysis by comparing mean expression levels between sample groups. Accurate mean estimates can only be achieved with precise estimates of the biological variation between independent samples.</p>
+<p>In DE experiments, increasing the number of <strong>biological replicates</strong> is generally more desirable than increasing read depth in single samples, unless you are particularly interested in rare RNAs. DESeq2 will not work if a sample group only has one replicate and it is recommended to have at least 3.</p>
+<p>If you have <strong>technical replicates</strong> in your experimental design, these should be merged into one sample to represent a single biological replicate.</p>
+<p>We also need to ensure (as much as possible) that any effect we see between groups can be attributed to differences in biology rather than <strong>confounding factors</strong> in the design or <strong>batch effects</strong> introduced at the library preparation stage.</p>
+<div class="resources">
+<h2 class="anchored" data-anchor-id="notes-on-experimental-design">
+<i class="fas fa-book"></i> Further Learning
+</h2>
+<p>Read this document on <a href="https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/experimental_planning_considerations.html">experimental design considerations</a> in differential expression analysis.</p>
+</div>
+</section>
+<section id="the-deseq2-method" class="level3">
+<h3 class="anchored" data-anchor-id="the-deseq2-method">The DESeq2 method</h3>
+<p>DESeq2 performs statistical analysis of un-normalised raw/estimated read count data per gene. It uses a <strong>median of ratios</strong> normalisation method to account for differences in <em>sequencing depth</em> and <em>RNA composition</em> between samples.</p>
+<p>Count data is modeled using a generalised linear model based on the <strong>negative binomial distribution</strong>, with a fitted mean and a gene-specific <strong>dispersion</strong> parameter which describes the relationship between <strong>variance</strong> in the count data and the observed <strong>mean</strong>.</p>
+<p>The model <em>coefficient</em> represents the change in mean between sample groups giving us <strong>log2 fold change</strong> values per gene. By default, DESeq2 performs the <em>Wald</em> test to test for significant changes in gene expression between sample groups and generate p-values which are then adjusted for multiple testing.</p>
+<p>DESeq2 has internal methods for:</p>
+<ul>
+<li><p>Estimating size factors (sample normalisation)</p></li>
+<li><p>Estimating dispersions</p></li>
+<li><p>Fitting the negative binomial GLM (log2 fold changes)</p></li>
+<li><p>Filtering outliers and low count genes</p></li>
+<li><p>Statistical tests between sample groups (p-values)</p></li>
+<li><p>Multiple testing correction (FDR adjusted p-value)</p></li>
+</ul>
+<p><img src="images/DESeq2.png" class="img-fluid"></p>
+</section>
+<section id="comprehensive-tutorials" class="level3">
+<h3 class="anchored">Comprehensive tutorials</h3>
+<p>This is a <em>lightweight</em> introduction to differential expression analysis. For a comprehensive overview of the DESeq2 method, functionality and complex experimental designs, check out the following resources:</p>
+<ul>
+<li><p><a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html">DESeq2 tutorial</a></p></li>
+<li><p><a href="http://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html">RNAseq analysis with DESeq2</a></p></li>
+<li><p><a href="https://hbctraining.github.io/DGE_workshop_salmon_online/schedule/links-to-lessons.html">HBC Differential expression workshop</a></p></li>
+</ul>
+<div class="key-points">
+<h2 class="anchored" data-anchor-id="comprehensive-tutorials">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>Setup R and RStudio and install required packages</li>
+<li>Download the required datasets</li>
+<li>Understand considerations for experimental design</li>
+<li>Understand an overview of the DESeq2 methodology</li>
+</ul>
+</div>
+<p><br></p>
+</section>
+</section>
+<section id="create-a-sample-file" class="level2">
+<h2 class="anchored" data-anchor-id="create-a-sample-file">2. Create a sample file</h2>
+<p>The first step in our analysis is to create a tab separated file of sample IDs and metadata. This already exists in the folder you downloaded earlier but you would normally create this manually. We can then import the sample sheet to R with the <code>read_tsv()</code> function from <strong>readr</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ss<span class="ot">&lt;-</span><span class="fu">read_tsv</span>(<span class="st">"salmon/samples.tsv"</span>,<span class="at">col_names =</span> T,<span class="at">col_types =</span> <span class="st">"fff"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>ss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 3
+  sample     condition replicate
+  &lt;fct&gt;      &lt;fct&gt;     &lt;fct&gt;    
+1 Control_1  Control   1        
+2 Control_2  Control   2        
+3 Control_3  Control   3        
+4 MOV10_KD_2 MOV10_KD  2        
+5 MOV10_KD_3 MOV10_KD  3        
+6 MOV10_OE_1 MOV10_OE  1        
+7 MOV10_OE_2 MOV10_OE  2        
+8 MOV10_OE_3 MOV10_OE  3        </code></pre>
+</div>
+</div>
+<div class="key-points">
+<h2 class="anchored">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>The sample file should contain metadata on each sample</li>
+<li>It is important to include all known variables that could confound results or explain technical variance</li>
+</ul>
+</div>
+</section>
+<section id="importing-count-data-with-tximport" class="level2">
+<h2 class="anchored" data-anchor-id="importing-count-data-with-tximport">3. Importing count data with tximport</h2>
+<p>We will start by importing the count data for each sample into R. We will use the package <a href="https://bioconductor.org/packages/release/bioc/html/tximport.html">tximport</a>to read the Salmon transcript count files and create a matrix of read counts for each gene. The <a href="https://bioconductor.org/packages/release/bioc/html/tximeta.html">tximeta</a> package is also worth looking at as it can auto-detect the genome you have used and download the metadata.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GenomicFeatures)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="do">## List all of our salmon quant.sf files</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"salmon"</span>,ss<span class="sc">$</span>sample,<span class="st">"quant.sf"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(files) <span class="ot">&lt;-</span> ss<span class="sc">$</span>sample</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Get the tx2gene map file</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"salmon/salmon_tx2gene.tsv"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="do">## Import the transcript counts and summarise to gene counts</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type =</span> <span class="st">"salmon"</span>, <span class="at">tx2gene =</span> tx2gene)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We must supply a map between transcript IDs and gene IDs for our annotations, so that the function can summarise counts at gene level. In the example above we read in <em>salmon_tx2gene.tsv</em>. This map can also be generated from a gtf annotation file using the code below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">### YOU DO NOT NEED TO RUN THIS CODE!!</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Make a Transcript DB object from our gene annotation GTF file</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>txdb<span class="ot">&lt;-</span><span class="fu">makeTxDbFromGFF</span>(<span class="at">organism =</span> <span class="st">"Homo sapiens"</span>,<span class="at">file =</span> <span class="st">"/home2/swebb/training/RNA-seq_analysis/annotation/Homo_sapiens.GRCh38.106.gtf"</span>,<span class="at">format =</span> <span class="st">"gtf"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>txdb<span class="ot">&lt;-</span><span class="fu">makeTxDbFromGFF</span>(<span class="at">organism =</span> <span class="st">"Homo sapiens"</span>,<span class="at">file =</span> <span class="st">"RNA-seq_anannotation/Homo_sapiens.GRCh38.106.gtf"</span>,<span class="at">format =</span> <span class="st">"gtf"</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Extract mappings from transcriptID to geneID</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">keys</span>(txdb, <span class="at">keytype =</span> <span class="st">"TXNAME"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">select</span>(txdb, k, <span class="st">"GENEID"</span>, <span class="st">"TXNAME"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we have per-gene count data, we can import this into DESeq2. We need to supply the <code>txi</code> object we have just created as well as a <em>design</em>.</p>
+<p>The simplest design is just to compare our samples by the condition column (Control, MOV10_KD, MOV10_OE). The design is a <em>formula</em> in R so is preceded with the <code>~</code> character.</p>
+<div class="resources">
+<h2 class="anchored">
+<i class="fas fa-book"></i> Further Learning
+</h2>
+<p>Have a look at these resources for advice on complex experimental designs (e.g.&nbsp;multiple variables of interest, interaction terms, time-course analysis:</p>
+<ul>
+<li><a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#variations-to-the-standard-workflow">DESeq2 manual</a></li>
+<li><a href="http://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#time-course-experiments">Time-course analysis example</a></li>
+<li><a href="https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/08a_DGE_LRT_results.html">Likelihood ratio test</a> for measuring changes across multiple sample groups at once.</li>
+</ul>
+</div>
+<p><br></p>
+<div class="key-points">
+<h2 class="anchored">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>Import pseudo-count data into R with <strong>tximeta</strong> or <strong>tximport</strong></li>
+<li>DESeq2 expects gene-level counts</li>
+<li>Summarise transcript counts to gene counts</li>
+</ul>
+</div>
+</section>
+<section id="creating-a-deseq-object-and-running-deseq" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-deseq-object-and-running-deseq">4. Creating a DESeq object and running DESeq</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Create the DESeq dataset object</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromTximport</span>(txi, ss, <span class="sc">~</span> condition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using counts and average transcript lengths from tximport</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>dds</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>class: DESeqDataSet 
+dim: 58396 8 
+metadata(1): version
+assays(2): counts avgTxLength
+rownames(58396): ENSG00000000003 ENSG00000000005 ... ENSG00000289718
+  ENSG00000289719
+rowData names(0):
+colnames(8): Control_1 Control_2 ... MOV10_OE_2 MOV10_OE_3
+colData names(3): sample condition replicate</code></pre>
+</div>
+</div>
+<p>The condition column is represented in R as a <em>factor</em>, or categorical variable, which has <em>levels</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(dds<span class="sc">$</span>condition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Control"  "MOV10_KD" "MOV10_OE"</code></pre>
+</div>
+</div>
+<p>By default, the levels are set in alphabetical order and DESeq2 will always assume that the first level is your control group to which it will compare datasets. In this case we are okay, otherwise you will need to <em>relevel</em> your condition column or explicitly reference the condition comparisons of interest in your results (see below).</p>
+<p>Let’s create a list of comparisons, known as contrasts, that we want to look at. Here we will put our <em>base-level</em> or control sample last. We will also set a few other variables to help name our outputs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>contrasts<span class="ot">&lt;-</span><span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"condition"</span>,<span class="st">"MOV10_OE"</span>,<span class="st">"Control"</span>),</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>           <span class="fu">c</span>(<span class="st">"condition"</span>,<span class="st">"MOV10_KD"</span>,<span class="st">"Control"</span>))</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="do">## As well as contrasts, DESeq also uses coefficients to name results. We can create these from our specified contrasts</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>coefficients<span class="ot">&lt;-</span>contrasts <span class="sc">%&gt;%</span> <span class="fu">map</span>(<span class="sc">~</span><span class="fu">paste</span>(.x[<span class="dv">1</span>],.x[<span class="dv">2</span>],<span class="st">"vs"</span>,.x[<span class="dv">3</span>],<span class="at">sep =</span> <span class="st">"_"</span>)) <span class="sc">%&gt;%</span> <span class="fu">unlist</span>()</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Simple project ID</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>project<span class="ot">=</span><span class="st">"MOV10"</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Labels for QC plots - we can add all possible confounding factors from our colData</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>labels<span class="ot">=</span> <span class="fu">c</span>(<span class="st">"condition"</span>,<span class="st">"replicate"</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="do">## Merge colData into label names in a data frame</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>cnames <span class="ot">&lt;-</span> <span class="fu">colData</span>(dds) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(<span class="fu">all_of</span>(labels), <span class="at">col =</span> label, <span class="at">sep =</span> <span class="st">"-"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(label)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="do">## Thresholds for p-value and fold change to filter and summarise results later</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>padj_thresh <span class="ot">=</span> <span class="fl">0.05</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>l2fc_thresh <span class="ot">=</span> <span class="dv">0</span> <span class="do">## Just include all significant genes here</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we are ready to run DESeq. The DESeq function has internal methods to:</p>
+<ul>
+<li><strong>Estimate size factors</strong> to normalise gene counts per sample</li>
+<li><strong>Estimate gene-wise dispersions</strong> to measure variance in the dataset</li>
+<li><strong>Shrink gene-wise dispersions</strong> to improve the dispersion estimates</li>
+<li><strong>Fit a <em>negative binomial</em> statistical model</strong> to the data</li>
+<li><strong>Perform statistical testing</strong> with the <em>Wald Test</em> or <em>Likelihood Ratio Test</em></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">## run DESeq</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>estimating size factors</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using 'avgTxLength' from assays(dds), correcting for library size</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>estimating dispersions</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>gene-wise dispersion estimates</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>mean-dispersion relationship</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>final dispersion estimates</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>fitting model and testing</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="do">## save dds object as a file - saveRDS can save R objects</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(dds,<span class="at">file =</span><span class="fu">paste0</span>(project,<span class="st">".dds.RDS"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="plot-dispersions" class="level3">
+<h3 class="anchored">Plot dispersions</h3>
+<p>It can be useful to plot the gene-level dispersion estimates to ensure the DESeq model is right for your data. You should find that dispersion is generally lower for genes with higher read counts, that final dispersion levels have been shrunk towards the fitted model and that a few outliers exist which have not been shrunk. If the red line is not a good generalisation for your data then DE analysis with DESeq2 may not be appropriate.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot dispersions</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDispEsts</span>(dds, <span class="at">main=</span><span class="st">"Dispersion plot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="key-points">
+<h2 class="anchored" data-anchor-id="plot-dispersions">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>Create a DESeq dataset from count data</li>
+<li>Understand the DESeq <em>design</em> parameter</li>
+<li>Run the <code>DESeq</code> function and understand the internal steps</li>
+<li>Plot <strong>dispersions</strong> to assess the fitted model</li>
+</ul>
+</div>
+</section>
+</section>
+<section id="deseq-quality-control" class="level2">
+<h2 class="anchored" data-anchor-id="deseq-quality-control">5. DESeq quality control</h2>
+<p>Before we look at the results of differential expression tests we first want to perform some quality control by visualising and assessing the entire dataset. The raw counts are not optimal for visualisation and clustering so we will apply a <em>regularised log transformation</em> which reduces the bias from genes with extremely low and high counts. The <code>rld()</code> function can take a while to run with large datasets.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Log transformed data</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>rld <span class="ot">&lt;-</span> <span class="fu">rlog</span>(dds, <span class="at">blind=</span>F)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(rld,<span class="at">file =</span><span class="fu">paste0</span>(project,<span class="st">".rld.RDS"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><br></p>
+<div class="resources">
+<h2 class="anchored">
+<i class="fas fa-book"></i> Further Learning
+</h2>
+<p>You can read more on DESeq2 data transformations <a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#data-transformations-and-visualization">here</a>.</p>
+</div>
+<section id="heatmap-of-sample-distances" class="level3">
+<h3 class="anchored" data-anchor-id="heatmap-of-sample-distances">Heatmap of Sample Distances</h3>
+<p>We can use our transformed data to perform sample clustering. Here, we calculate sample <em>distances</em> with the <code>dist()</code> function applied to the transpose of the transformed count matrix. A heatmap of this distance matrix gives us an overview of similarities and dissimilarities between samples.</p>
+<p>We have to provide a hierarchical clustering <code>hc</code> to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"pheatmap"</span>) <span class="co">#  heatmap plotting package</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"RColorBrewer"</span>) <span class="co"># colour scales</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>sampleDists <span class="ot">&lt;-</span> <span class="fu">dist</span>(<span class="fu">t</span>(<span class="fu">assay</span>(rld)))</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>sampleDistMatrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(sampleDists)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(sampleDistMatrix) <span class="ot">&lt;-</span> <span class="fu">as.list</span>(cnames)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(sampleDistMatrix) <span class="ot">&lt;-</span> <span class="fu">as.list</span>(cnames)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">colorRampPalette</span>( <span class="fu">rev</span>(<span class="fu">brewer.pal</span>(<span class="dv">9</span>, <span class="st">"Blues"</span>)) )(<span class="dv">255</span>) <span class="do">## Set a colour pallette in shades of blue</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(sampleDistMatrix,</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">clustering_distance_rows=</span>sampleDists,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">clustering_distance_cols=</span>sampleDists,</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>         <span class="at">col=</span>cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="principle-component-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="principle-component-analysis">Principle Component Analysis</h3>
+<p>Another way to visualize sample-to-sample distances is a principal components analysis (PCA). In this method, the data points (here, the samples) are projected onto a 2D plane such that they spread out in the two directions that explain most of the variation in the data.</p>
+<p>The x-axis is the direction that separates the data points the most. The values of the samples in this direction are written PC1 (principle component 1). The y-axis is a direction that separates the data the second most, PC2. The percent of the total variance that is contained in each direction is printed on the axis label. Note that these percentages do not add to 100%, because there are more dimensions that contain the remaining variance.</p>
+<p>We expect to see our samples divide by their biological <em>condition</em> or some other source of variation that we are aware of (e.g.&nbsp;sex, cell type, batches of library preparation etc). If you do not see your samples separating by your variable of interest you may want to plot out PC3 and PC4 to see if it appears there. If there is a large amount of variance introduced by other factors or batch effects then you will need to control for these in your experimental design. See the DESeq2 vignette for more details.</p>
+<p>We will run the PCA analysis with the DESeq2 command <code>plotPCA()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Principle component analysis - get the PCA data</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(rld, <span class="at">intgroup=</span><span class="fu">c</span>(labels[<span class="dv">1</span>],labels[<span class="fu">length</span>(labels)]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>If we don’t like the default plotting style we can ask <code>plotPCA</code> to return the data only and create our own custom plot. Below, we use <strong>ggplot</strong>, a sophisticated plotting package in R.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Principle component analysis - get the PCA data</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>pca<span class="ot">&lt;-</span><span class="fu">plotPCA</span>(rld, <span class="at">intgroup=</span><span class="fu">c</span>(labels[<span class="dv">1</span>],labels[<span class="fu">length</span>(labels)]),<span class="at">returnData=</span>T)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot with ggplot</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pca,<span class="fu">aes</span>(PC1,PC2,<span class="at">colour=</span>condition,<span class="at">shape=</span>replicate)) <span class="sc">+</span> </span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.key =</span> <span class="fu">element_blank</span>()) <span class="sc">+</span> </span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">paste</span>(<span class="st">"PC1:"</span>,<span class="fu">round</span>(<span class="fu">attr</span>(pca,<span class="st">"percentVar"</span>)[<span class="dv">1</span>]<span class="sc">*</span><span class="dv">100</span>),<span class="st">"%"</span>)) <span class="sc">+</span> </span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">paste</span>(<span class="st">"PC1:"</span>,<span class="fu">round</span>(<span class="fu">attr</span>(pca,<span class="st">"percentVar"</span>)[<span class="dv">2</span>]<span class="sc">*</span><span class="dv">100</span>),<span class="st">"%"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="heatmap-of-genes-with-the-largest-variance" class="level3">
+<h3 class="anchored">Heatmap of genes with the largest variance</h3>
+<p>It may also be useful to take an initial look at the genes with the highest amount of variation across the dataset. We should expect to see some genes which appear to be differentially expressed between sample groups.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get the top 20 genes after ordering the rld counts by variance</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>topVarGenes <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">order</span>(<span class="sc">-</span><span class="fu">rowVars</span>(<span class="fu">assay</span>(rld),<span class="at">useNames =</span> T)),<span class="dv">20</span>)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Create a matrix from these genes only</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>mat <span class="ot">&lt;-</span> <span class="fu">assay</span>(rld)[topVarGenes, ] </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>anno<span class="ot">&lt;-</span><span class="fu">as.data.frame</span>(<span class="fu">colData</span>(dds)[,labels])</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(mat,<span class="at">cluster_rows =</span> F,<span class="at">cluster_cols =</span> F,<span class="at">show_rownames =</span> T,<span class="at">scale=</span><span class="st">"row"</span>,<span class="at">annotation_col =</span> anno)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="discussion">
+<h2 class="anchored" data-anchor-id="heatmap-of-genes-with-the-largest-variance">
+<i class="far fa-bell"></i> Discussion
+</h2>
+<p>Can you guess which gene has the Ensembl identifier ENSG00000155363?</p>
+</div>
+</section>
+<section id="plot-individual-gene-counts" class="level3">
+<h3 class="anchored">Plot Individual Gene Counts</h3>
+<p>In certain cases like ours, where we know the expression levels of particular genes should change between sample groups, we may want to plot individual gene counts. Let’s plot normalised gene counts for the MOV10 gene (ENSG00000155363).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get normalised counts for a single gene</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>gene<span class="ot">=</span><span class="st">"ENSG00000155363"</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>geneData <span class="ot">&lt;-</span> <span class="fu">plotCounts</span>(dds, <span class="at">gene=</span>gene, <span class="at">intgroup=</span>labels, <span class="at">returnData=</span><span class="cn">TRUE</span>,<span class="at">normalized =</span> T)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot with ggplot</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(geneData, <span class="fu">aes_string</span>(<span class="at">x=</span>labels[<span class="dv">1</span>], <span class="at">y=</span><span class="st">"count"</span>,<span class="at">fill=</span>labels[<span class="fu">length</span>(labels)])) <span class="sc">+</span> </span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>() <span class="sc">+</span> </span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dotplot</span>(<span class="at">binaxis=</span><span class="st">"y"</span>, <span class="at">stackdir=</span><span class="st">"center"</span>) <span class="sc">+</span> </span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.key =</span> <span class="fu">element_blank</span>()) <span class="sc">+</span> </span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(gene) <span class="sc">+</span> </span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
+ℹ Please use tidy evaluation idioms with `aes()`.
+ℹ See also `vignette("ggplot2-in-packages")` for more information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Bin width defaults to 1/30 of the range of the data. Pick better value with
+`binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="key-points">
+<h2 class="anchored" data-anchor-id="plot-individual-gene-counts">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>Transform count data for summary plots</li>
+<li>Create summary plots and assess for QC
+<ul>
+<li>PCA</li>
+<li>Clustering by sample distance</li>
+<li>Heatmaps of gene counts</li>
+<li>Individual gene counts</li>
+</ul></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="extract-deseq2-results" class="level2">
+<h2 class="anchored" data-anchor-id="extract-deseq2-results">6. Extract DESeq2 results</h2>
+<p>If we are happy with our QC assessment we can retrieve results from the DESeq object and visualise fold changes between specific comparisons.</p>
+<p>DESeq2 has a <code>results()</code> function which by default will print the results of the last variable in your formula, comparing the last level of this variable with your base-level. In our case this is the conditions MOV10_OE vs Control.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">results</span>(dds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>log2 fold change (MLE): condition MOV10 OE vs Control 
+Wald test p-value: condition MOV10 OE vs Control 
+DataFrame with 58396 rows and 6 columns
+                 baseMean log2FoldChange     lfcSE       stat      pvalue
+                &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt;  &lt;numeric&gt;   &lt;numeric&gt;
+ENSG00000000003 3493.3769     -0.4426597 0.0851357 -5.1994602 1.99868e-07
+ENSG00000000005   26.2026     -0.0163884 0.4447545 -0.0368482 9.70606e-01
+ENSG00000000419 1600.4515      0.3753645 0.0998817  3.7580902 1.71215e-04
+ENSG00000000457  504.6620      0.2532487 0.1053669  2.4034929 1.62393e-02
+ENSG00000000460 1112.7132     -0.2626755 0.0852641 -3.0807284 2.06495e-03
+...                   ...            ...       ...        ...         ...
+ENSG00000289714  0.000000             NA        NA         NA          NA
+ENSG00000289715  0.000000             NA        NA         NA          NA
+ENSG00000289716 28.600952       0.112480  0.553978   0.203041    0.839103
+ENSG00000289718  0.167725      -1.026277  4.080456  -0.251510    0.801420
+ENSG00000289719 14.921394       0.614092  0.547343   1.121950    0.261884
+                       padj
+                  &lt;numeric&gt;
+ENSG00000000003 4.12199e-06
+ENSG00000000005 9.84458e-01
+ENSG00000000419 1.39950e-03
+ENSG00000000457 5.80996e-02
+ENSG00000000460 1.12268e-02
+...                     ...
+ENSG00000289714          NA
+ENSG00000289715          NA
+ENSG00000289716    0.912842
+ENSG00000289718          NA
+ENSG00000289719    0.444436</code></pre>
+</div>
+</div>
+<p>However, the <code>dds</code> object stores several results. You can see these with the function <code>resultsNames()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resultsNames</span>(dds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Intercept"                     "condition_MOV10_KD_vs_Control"
+[3] "condition_MOV10_OE_vs_Control"</code></pre>
+</div>
+</div>
+<p>The Intercept result is a statistical model that compares gene expression to 0 so is not relevant here. We can see that we have results for both of our MOV10 perturbation experiments vs the control.</p>
+<p>We can extract a specific result by providing arguments to the <code>results()</code> function. Let’s look at the first comparison in our list, <strong>MOV10_OE vs Control</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>res<span class="ot">&lt;-</span><span class="fu">results</span>(dds,<span class="at">contrast =</span> contrasts[[<span class="dv">1</span>]])</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>res</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>log2 fold change (MLE): condition MOV10_OE vs Control 
+Wald test p-value: condition MOV10 OE vs Control 
+DataFrame with 58396 rows and 6 columns
+                 baseMean log2FoldChange     lfcSE       stat      pvalue
+                &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt;  &lt;numeric&gt;   &lt;numeric&gt;
+ENSG00000000003 3493.3769     -0.4426597 0.0851357 -5.1994602 1.99868e-07
+ENSG00000000005   26.2026     -0.0163884 0.4447545 -0.0368482 9.70606e-01
+ENSG00000000419 1600.4515      0.3753645 0.0998817  3.7580902 1.71215e-04
+ENSG00000000457  504.6620      0.2532487 0.1053669  2.4034929 1.62393e-02
+ENSG00000000460 1112.7132     -0.2626755 0.0852641 -3.0807284 2.06495e-03
+...                   ...            ...       ...        ...         ...
+ENSG00000289714  0.000000             NA        NA         NA          NA
+ENSG00000289715  0.000000             NA        NA         NA          NA
+ENSG00000289716 28.600952       0.112480  0.553978   0.203041    0.839103
+ENSG00000289718  0.167725      -1.026277  4.080456  -0.251510    0.801420
+ENSG00000289719 14.921394       0.614092  0.547343   1.121950    0.261884
+                       padj
+                  &lt;numeric&gt;
+ENSG00000000003 4.12199e-06
+ENSG00000000005 9.84570e-01
+ENSG00000000419 1.39950e-03
+ENSG00000000457 5.80996e-02
+ENSG00000000460 1.12268e-02
+...                     ...
+ENSG00000289714          NA
+ENSG00000289715          NA
+ENSG00000289716    0.912953
+ENSG00000289718          NA
+ENSG00000289719    0.444436</code></pre>
+</div>
+</div>
+<p>The results table includes several columns:</p>
+<ul>
+<li>baseMean = Mean number of counts from all samples</li>
+<li>log2FoldChange = Log2 of the fold change in normalised counts between sample groups in the contrast</li>
+<li>lfcSE = Standard error of the log2 fold change</li>
+<li>stat = The test statistic (Wald test in this case)</li>
+<li>pvalue = The pvalue / significance level</li>
+<li>padj = The pvalue adjusted for multiple testing</li>
+</ul>
+<section id="multiple-testing-correction-and-independent-filtering" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-testing-correction-and-independent-filtering">Multiple testing correction and independent filtering</h3>
+<p>The two most important columns in our results table are <strong>log2FoldChange</strong>, which is the effect size and tells us how much a gene’s expression has changed, and <strong>padj</strong> which gives us the level of statistical significance. DESeq2 reports adjusted p-values (padj) which are corrected for <strong>multiple testing</strong>. We should use these values, <strong>not the pvalue column</strong>, to filter or call significant genes.</p>
+<p>DESeq2 uses the Benjamini-Hochberg method to adjust p-values and control the false discovery rate. So, if you were to filter for genes with a padj&lt;=0.05 you would expect 5% of these to be false positives.</p>
+<p>If you inspect the result table you may notice that some genes have padj and/or pvalue set to NA. This is because the <code>results()</code> function performs filtering of genes to reduce the total number of genes tested and increase the likelihood of finding significant genes after the multiple testing correction. The more genes we test, the larger the multiple testing correction, so it makes sense to remove genes where we are unlikely to see a statistical effect:</p>
+<ul>
+<li>Genes with zero counts in all samples</li>
+<li>Genes with extreme outliers</li>
+<li>Genes with extremely low normalised counts</li>
+</ul>
+<p>Let’s look at a summary of our results. We will also set an <strong>alpha</strong> to tell DESeq which significance threshold to use when summarising results:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(res,<span class="at">alpha=</span>padj_thresh)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+out of 34774 with nonzero total read count
+adjusted p-value &lt; 0.05
+LFC &gt; 0 (up)       : 2077, 6%
+LFC &lt; 0 (down)     : 2708, 7.8%
+outliers [1]       : 14, 0.04%
+low counts [2]     : 16900, 49%
+(mean count &lt; 9)
+[1] see 'cooksCutoff' argument of ?results
+[2] see 'independentFiltering' argument of ?results</code></pre>
+</div>
+</div>
+<p>This is great, we definitely have significant differentially expressed genes!</p>
+</section>
+<section id="log-fold-change-shrinkage" class="level3">
+<h3 class="anchored" data-anchor-id="log-fold-change-shrinkage">Log Fold Change Shrinkage</h3>
+<p>Let’s take a look at these results visually. DESeq2 provides a <code>plotMA()</code> function to create MA plots(log2FoldChange vs the mean of normalised counts), a common way to visualise DE genes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotMA</span>(res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Significant genes (&lt;=0.05 padj) appear in blue, while non-significant genes are grey. We can immediately see that genes with low counts have much larger variation in log-fold changes. DESeq2 provides the <code>LFCshrink()</code> to shrink the fold change estimates and reduce the “noise” from these genes. We can use it instead of the <code>results()</code> function and these shrunken fold changes are much better for visualising and ranking our data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>resLFC<span class="ot">&lt;-</span><span class="fu">lfcShrink</span>(dds,<span class="at">coef =</span> coefficients[<span class="dv">1</span>],<span class="at">type=</span><span class="st">"apeglm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using 'apeglm' for LFC shrinkage. If used in published research, please cite:
+    Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
+    sequence count data: removing the noise and preserving large differences.
+    Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(resLFC,<span class="at">alpha=</span>padj_thresh)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+out of 34774 with nonzero total read count
+adjusted p-value &lt; 0.05
+LFC &gt; 0 (up)       : 2077, 6%
+LFC &lt; 0 (down)     : 2708, 7.8%
+outliers [1]       : 14, 0.04%
+low counts [2]     : 16900, 49%
+(mean count &lt; 9)
+[1] see 'cooksCutoff' argument of ?results
+[2] see 'independentFiltering' argument of ?results</code></pre>
+</div>
+</div>
+<p>We can see that the number of significant genes is unaffected. Let’s create a new MA plot.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotMA</span>(resLFC)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>You should see how the shrunken fold changes will be more useful for downstream analysis of the data.</p>
+</section>
+<section id="create-result-tables-for-each-of-our-comparisons" class="level3">
+<h3 class="anchored" data-anchor-id="create-result-tables-for-each-of-our-comparisons">Create result tables for each of our comparisons</h3>
+<p>Before moving on, we are going to create result tables for each of the comparisons we are interested in. We will also order these by <em>padj</em> so the most significant genes are on top.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Map each of our coefficients to the lfcShrink function</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>result_list<span class="ot">&lt;-</span>coefficients <span class="sc">%&gt;%</span> <span class="fu">map</span>(<span class="sc">~</span><span class="fu">lfcShrink</span>(dds,<span class="at">coef =</span> .x,<span class="at">type =</span> <span class="st">"apeglm"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using 'apeglm' for LFC shrinkage. If used in published research, please cite:
+    Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
+    sequence count data: removing the noise and preserving large differences.
+    Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895
+using 'apeglm' for LFC shrinkage. If used in published research, please cite:
+    Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
+    sequence count data: removing the noise and preserving large differences.
+    Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(result_list) <span class="ot">=</span> coefficients</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>result_list</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$condition_MOV10_OE_vs_Control
+log2 fold change (MAP): condition MOV10 OE vs Control 
+Wald test p-value: condition MOV10 OE vs Control 
+DataFrame with 58396 rows and 5 columns
+                 baseMean log2FoldChange     lfcSE      pvalue        padj
+                &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt;   &lt;numeric&gt;   &lt;numeric&gt;
+ENSG00000000003 3493.3769    -0.42009662 0.0858830 1.99868e-07 4.12199e-06
+ENSG00000000005   26.2026    -0.00291646 0.1952387 9.70606e-01 9.84458e-01
+ENSG00000000419 1600.4515     0.34321370 0.1004344 1.71215e-04 1.39950e-03
+ENSG00000000457  504.6620     0.21909429 0.1028038 1.62393e-02 5.80996e-02
+ENSG00000000460 1112.7132    -0.23950281 0.0842909 2.06495e-03 1.12268e-02
+...                   ...            ...       ...         ...         ...
+ENSG00000289714  0.000000             NA        NA          NA          NA
+ENSG00000289715  0.000000             NA        NA          NA          NA
+ENSG00000289716 28.600952     0.01510826  0.202870    0.839103    0.912842
+ENSG00000289718  0.167725    -0.00643906  0.217131    0.801420          NA
+ENSG00000289719 14.921394     0.08953887  0.224710    0.261884    0.444436
+
+$condition_MOV10_KD_vs_Control
+log2 fold change (MAP): condition MOV10 KD vs Control 
+Wald test p-value: condition MOV10 KD vs Control 
+DataFrame with 58396 rows and 5 columns
+                 baseMean log2FoldChange     lfcSE      pvalue       padj
+                &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt;   &lt;numeric&gt;  &lt;numeric&gt;
+ENSG00000000003 3493.3769    -0.00471138 0.0834052 0.948000695 0.98020857
+ENSG00000000005   26.2026    -0.07604609 0.1896524 0.198963380 0.42514606
+ENSG00000000419 1600.4515     0.14366889 0.1035714 0.095040977 0.26647514
+ENSG00000000457  504.6620     0.37636817 0.1174052 0.000214838 0.00284425
+ENSG00000000460 1112.7132     0.16791324 0.0894084 0.031705242 0.12650603
+...                   ...            ...       ...         ...        ...
+ENSG00000289714  0.000000             NA        NA          NA         NA
+ENSG00000289715  0.000000             NA        NA          NA         NA
+ENSG00000289716 28.600952     0.05340824  0.181720    0.285774   0.528048
+ENSG00000289718  0.167725    -0.00322889  0.178059    0.769643         NA
+ENSG00000289719 14.921394    -0.01081164  0.171725    0.816282         NA</code></pre>
+</div>
+</div>
+</section>
+<section id="formatting-and-annotating-results" class="level3">
+<h3 class="anchored">Formatting and annotating results</h3>
+<p>We will apply a bit of formatting to our results table and also add some annotations.</p>
+<ul>
+<li>Convert to a format where we can use <strong>tidyverse</strong> verbs</li>
+<li>Move the rownames to a <strong>geneID</strong> column</li>
+<li>Add a <strong>threshold</strong> column for genes we wish to label as significant</li>
+<li>Order each table by padj so significant genes are at the top</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>result_list2<span class="ot">&lt;-</span>result_list <span class="sc">%&gt;%</span> </span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="sc">~</span><span class="fu">as.data.frame</span>(.x) <span class="sc">%&gt;%</span> </span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">rownames_to_column</span>(<span class="st">"geneID"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">threshold=</span><span class="fu">case_when</span>(padj<span class="sc">&lt;=</span>padj_thresh <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange)<span class="sc">&gt;=</span>l2fc_thresh<span class="sc">~</span><span class="st">"Significant"</span>,T<span class="sc">~</span><span class="st">"Not Significant"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">arrange</span>(padj) <span class="sc">%&gt;%</span> </span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">as_tibble</span>()</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>result_list2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$condition_MOV10_OE_vs_Control
+# A tibble: 58,396 × 7
+   geneID          baseMean log2FoldChange  lfcSE    pvalue      padj threshold 
+   &lt;chr&gt;              &lt;dbl&gt;          &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;     
+ 1 ENSG00000155363   94561.          7.47  0.134  0         0         Significa…
+ 2 ENSG00000189060    7874.          1.52  0.0704 1.33e-104 1.19e-100 Significa…
+ 3 ENSG00000173110     257.          6.52  0.357  1.53e- 74 9.12e- 71 Significa…
+ 4 ENSG00000270882    2234.          1.73  0.101  1.39e- 66 6.22e- 63 Significa…
+ 5 ENSG00000187837    1605.          1.48  0.0936 1.52e- 57 5.30e- 54 Significa…
+ 6 ENSG00000265972    5203.          1.38  0.0876 1.78e- 57 5.30e- 54 Significa…
+ 7 ENSG00000155090    1699.          1.20  0.0810 8.51e- 51 2.17e- 47 Significa…
+ 8 ENSG00000102317    8191.         -0.752 0.0543 1.30e- 44 2.84e- 41 Significa…
+ 9 ENSG00000112972   12428.          0.926 0.0670 1.43e- 44 2.84e- 41 Significa…
+10 ENSG00000142002    2395.         -0.765 0.0599 1.86e- 38 3.32e- 35 Significa…
+# ℹ 58,386 more rows
+
+$condition_MOV10_KD_vs_Control
+# A tibble: 58,396 × 7
+   geneID          baseMean log2FoldChange  lfcSE   pvalue     padj threshold  
+   &lt;chr&gt;              &lt;dbl&gt;          &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;      
+ 1 ENSG00000116962    6310.          1.10  0.0693 3.89e-58 6.44e-54 Significant
+ 2 ENSG00000143183    1784.          1.19  0.0792 3.08e-52 2.55e-48 Significant
+ 3 ENSG00000270882    2234.          1.67  0.112  2.47e-51 1.37e-47 Significant
+ 4 ENSG00000038274    2424.         -1.07  0.0765 1.37e-45 5.65e-42 Significant
+ 5 ENSG00000168036   11651.          0.812 0.0583 4.68e-45 1.55e-41 Significant
+ 6 ENSG00000124762    2759.          1.16  0.0834 6.39e-45 1.76e-41 Significant
+ 7 ENSG00000116473    2151.         -1.02  0.0735 8.83e-45 2.09e-41 Significant
+ 8 ENSG00000082458    4642.         -0.732 0.0563 8.88e-40 1.84e-36 Significant
+ 9 ENSG00000109971   22609.          0.739 0.0590 4.83e-37 8.88e-34 Significant
+10 ENSG00000129250    2738.         -1.06  0.0854 7.63e-37 1.24e-33 Significant
+# ℹ 58,386 more rows</code></pre>
+</div>
+</div>
+<p>Our result table contains Ensembl gene identifier but we may want to add more annotations like the gene name and biotype. We can fetch Ensembl annotations from the R package <strong>AnnotationHub</strong> or from the <a href="https://www.ensembl.org/info/data/biomart/index.html">BioMart</a> website. We already have a file called <em>genes.tsv</em> which has some of this additional information.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>genes<span class="ot">&lt;-</span><span class="fu">read_tsv</span>(<span class="st">"salmon/genes.tsv"</span>)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>genes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 69,340 × 4
+   gene_id         gene_name   gene_biotype                        entrezid
+   &lt;chr&gt;           &lt;chr&gt;       &lt;chr&gt;                                  &lt;dbl&gt;
+ 1 ENSG00000223972 DDX11L1     transcribed_unprocessed_pseudogene     84771
+ 2 ENSG00000227232 WASH7P      unprocessed_pseudogene                    NA
+ 3 ENSG00000278267 MIR6859-1   miRNA                              102466751
+ 4 ENSG00000243485 MIR1302-2HG lncRNA                                    NA
+ 5 ENSG00000284332 MIR1302-2   miRNA                              100302278
+ 6 ENSG00000237613 FAM138A     lncRNA                                645520
+ 7 ENSG00000268020 OR4G4P      unprocessed_pseudogene                    NA
+ 8 ENSG00000240361 OR4G11P     transcribed_unprocessed_pseudogene        NA
+ 9 ENSG00000186092 OR4F5       protein_coding                         79501
+10 ENSG00000238009 &lt;NA&gt;        lncRNA                                    NA
+# ℹ 69,330 more rows</code></pre>
+</div>
+</div>
+<p>Now we can merge our result tables with the annotations to add extra columns:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Map all result lists to a function that joins with the anno data</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>result_list_anno<span class="ot">&lt;-</span>result_list2 <span class="sc">%&gt;%</span> </span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="sc">~</span><span class="fu">left_join</span>(<span class="at">x=</span>.x,<span class="at">y=</span>genes,<span class="at">by=</span><span class="fu">c</span>(<span class="st">"geneID"</span><span class="ot">=</span><span class="st">"gene_id"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">gene_biotype=</span><span class="fu">as.factor</span>(gene_biotype))) <span class="do">## biotype as a factor</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We will now save these results tables to text files so we can use them outside of R if required. We can create a folder for each of our results.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Map each of our result names to a function that saves each table in our results_list</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(result_list_anno) <span class="sc">%&gt;%</span> <span class="fu">map</span>(<span class="cf">function</span>(x){</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(x)</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_tsv</span>(result_list_anno[[x]],<span class="fu">paste0</span>(x,<span class="st">"/DEseq_result.tsv"</span>),<span class="at">col_names =</span> T)</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="key-points">
+<h2 class="anchored" data-anchor-id="formatting-and-annotating-results">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>Extract results for individual contrasts</li>
+<li>Create MA plots</li>
+<li>Shrink log2 fold change estimates</li>
+<li>Add annotations to result tables</li>
+</ul>
+</div>
+</section>
+</section>
+<section id="visualise-deseq2-results" class="level2">
+<h2 class="anchored" data-anchor-id="visualise-deseq2-results">7. Visualise DESeq2 results</h2>
+<p>We have already seen the MA plot but there are many other methods for plotting DESeq2 results. We cover some popular visualisations below.</p>
+<section id="volcano-plots" class="level3">
+<h3 class="anchored" data-anchor-id="volcano-plots">Volcano plots</h3>
+<p>Let’s try a <strong>volcano plot</strong>, another popular visualisation for DE analysis. Here we are plotting the log fold change on the x-axis against the negative log of our p-values, so that significant genes appear at the top of the plot. We can then see the spread of fold changes in each direction in our set of significant genes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(result_list_anno[[<span class="dv">1</span>]],<span class="fu">aes</span>(log2FoldChange,<span class="sc">-</span><span class="fu">log10</span>(padj),<span class="at">colour=</span>threshold)) <span class="sc">+</span> </span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(coefficients[<span class="dv">1</span>])  <span class="sc">+</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.key =</span> <span class="fu">element_blank</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We can even use <em>ggrepel</em> to label some of our genes. Let’s select five genes with the lowest adjusted pvalues.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'ggrepel' was built under R version 4.2.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>topFive<span class="ot">&lt;-</span>result_list_anno[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>)</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(result_list_anno[[<span class="dv">1</span>]],<span class="fu">aes</span>(log2FoldChange,<span class="sc">-</span><span class="fu">log10</span>(padj),<span class="at">colour=</span>threshold)) <span class="sc">+</span> </span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">data=</span>topFive,<span class="fu">aes</span>(<span class="at">label =</span> gene_name))<span class="sc">+</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(coefficients[<span class="dv">1</span>])  <span class="sc">+</span></span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.key =</span> <span class="fu">element_blank</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 40536 rows containing missing values (`geom_point()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="plots-of-de-genes-by-biotype" class="level3">
+<h3 class="anchored" data-anchor-id="plots-of-de-genes-by-biotype">Plots of DE genes by biotype</h3>
+<p>If we are interested in more than just protein coding genes, we could take a look at the types of RNAs which are represented in our list of DE genes.</p>
+<p>First, let’s filter our results for genes which pass our threshold for differential expression.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get a list of significant DEGs</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>sig_genes<span class="ot">&lt;-</span>result_list_anno[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(threshold<span class="sc">==</span><span class="st">"Significant"</span>)</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot barplot of gene_biotype</span></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(sig_genes,<span class="fu">aes</span>(<span class="st">"Significant genes"</span>,<span class="at">fill=</span>gene_biotype)) <span class="sc">+</span></span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span> </span>
+<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb60-8"><a href="#cb60-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">""</span>) <span class="sc">+</span></span>
+<span id="cb60-9"><a href="#cb60-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">vjust =</span> <span class="dv">1</span>, <span class="at">hjust=</span><span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="heatmaps-of-genes-with-largest-changes" class="level3">
+<h3 class="anchored">Heatmaps of genes with largest changes</h3>
+<p>Now that we have our results, we can use the log normalised counts we created earlier to plot heatmaps of genes with the largest changes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Out of all significant genes, get the 50 with the largest fold change in either direction in MOV10_OE relative to the control</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>top50<span class="ot">&lt;-</span>result_list_anno[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> </span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(threshold<span class="sc">==</span><span class="st">"Significant"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">abs</span>(log2FoldChange)) <span class="sc">%&gt;%</span> </span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n=</span><span class="dv">50</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(geneID)</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Create a matrix of rld counts and plot the heatmap</span></span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a>mat<span class="ot">&lt;-</span><span class="fu">assay</span>(rld)[top50,]</span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a>colors <span class="ot">&lt;-</span> <span class="fu">colorRampPalette</span>( <span class="fu">rev</span>(<span class="fu">brewer.pal</span>(<span class="dv">9</span>, <span class="st">"RdBu"</span>)) )(<span class="dv">255</span>)</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(mat,<span class="at">color=</span>colors,<span class="at">scale =</span> <span class="st">"row"</span>,<span class="at">cluster_rows =</span> T,<span class="at">cluster_cols =</span> T,<span class="at">annotation_col =</span> anno)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="lesson2_DESeq2_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="key-points">
+<h2 class="anchored" data-anchor-id="heatmaps-of-genes-with-largest-changes">
+<i class="fas fa-thumbtack"></i> Key points:
+</h2>
+<ul>
+<li>There are many ways to summarise and visualise DE results</li>
+<li>Get creative!</li>
+</ul>
+</div>
+<p><br></p>
+<div class="challenge">
+<h2 class="anchored">
+<i class="fas fa-pencil-alt"></i> Challenge:
+</h2>
+<p>See if you can produce similar visual outputs and summaries of results for the MOV10_KD_vs_Control comparison.</p>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

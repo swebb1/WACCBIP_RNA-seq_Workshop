@@ -27,8 +27,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 We are using the Linux command line to run most of the tools we use today.
 
-------------------------------------------------------------------------
-
 ### Logging in
 
 We will use the WACCBIP bioinformatics server for this practical.
@@ -45,35 +43,9 @@ Once you have typed in your password, you should see some text and a prompt that
 [USERNAME]@aabn:~$
 ```
 
-------------------------------------------------------------------------
+### RStudio
 
-### Creating A Web Directory
-
-In order to view files created on the server, we need to create a *public_html* directory in our home folder.
-
-After logging in you should be in your \$HOME directory, check with;
-
-``` bash
-pwd
-```
-
-This shows the **path** of your present working directory, which should now be your home directory as you have just logged in. You can return to this place at any time using the change directory command.
-
-``` bash
-cd
-```
-
-You have permission to create files and directories under your home folder. Let's create the `public_html` directory to use later on.
-
-``` bash
-mkdir ~/public_html
-```
-
-Here we have used \~/ as a shortcut for your \$HOME directory. As you have created `~/public_html`, contents of this directory are now available online with any web browser
-
-To see it, enter the following URL, changing *yourUserName* to whatever your username is: https://bifx-core3.bio.ed.ac.uk/\~yourUserName
-
-------------------------------------------------------------------------
+We will use RStudio in the second part of this workshop to analyses read count data. RStudio can also be used to view the files we create on the server in a genome browser. Check that you can login at [http://aabn.ug.edu.gh/auth-sign-in](https://eur02.safelinks.protection.outlook.com/?url=http%3A%2F%2Faabn.ug.edu.gh%2Fauth-sign-in&data=05%7C02%7C%7C308be624c262423dbeb408dc256eb9c4%7C2e9f06b016694589878910a06934dc61%7C0%7C0%7C638426405753131265%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=SmKwPGIJq35pVVqzWUFEkDYwQ6XtvRqjaGUQEXflpwA%3D&reserved=0 "Original URL: http://aabn.ug.edu.gh/auth-sign-in. Click or tap if you trust this link.")
 
 ### Integrative Genomics Viewer
 
@@ -86,8 +58,6 @@ Please install [IGV](https://software.broadinstitute.org/software/igv/download) 
 -   Create a personal web directory
 -   Install IGV on your own machine
 :::
-
-<br>
 
 ## 2. RNA-seq sequencing data
 
@@ -140,8 +110,6 @@ It is also important to collect **metadata** (information about the data) that d
 | MOV10_OE_2 | MOV10 over-expression, replicate 2 |
 | MOV10_OE_3 | MOV10 over-expression, replicate 3 |
 
-------------------------------------------------------------------------
-
 ### Obtaining data
 
 First, make a new directory for this tutorial and move into that directory. Then link the directory to your `public_html` folder as we are going to make everything public in this tutorial.
@@ -150,14 +118,13 @@ First, make a new directory for this tutorial and move into that directory. Then
 cd 
 mkdir RNA-seq_workshop
 cd RNA-seq_workshop
-ln -s $PWD ~/public_html/
 ```
 
 Next, create a subfolder called **fastq** for all of our sequence files and link the raw datasets to this folder:
 
 ``` bash
 mkdir fastq
-ln -s /home2/swebb/training/RNA-seq_analysis/data/lesson_1/fastq/*fq.gz fastq/
+ln -s /home2/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz fastq/
 ```
 
 As well as the raw data we will also need access to annotations and reference sequences for the human genome/transcriptome. These are provided for this workshop and should also be linked to your folder:
@@ -165,8 +132,6 @@ As well as the raw data we will also need access to annotations and reference se
 ``` bash
 ln -s /home2/swebb/training/RNA-seq_analysis/annotation .
 ```
-
-------------------------------------------------------------------------
 
 ### FastQ files
 
@@ -193,10 +158,6 @@ zless Control_1.fq.gz | head -n 12
 -   Understand the fastq file format
 :::
 
-<br>
-
-------------------------------------------------------------------------
-
 ## 3. Quality control
 
 Next we want to assess the quality of our sequencing data and check for any biases and contamination.
@@ -210,11 +171,9 @@ cd .. #Move up a directory again
 fastq_screen --conf /homes/genomes/tool_configs/fastq_screen/fastq_screen.conf fastq/*fq.gz --outdir fastq # * is a wild card character so includes all files that end fq.gz
 ```
 
-Once complete, take a look at the output images in your browser via your public_html folder. This shows that most of your reads align to the human genome and that no reads align uniquely to other organisms:
+Once complete, take a look at the output images in your browser via RStudio. This shows that most of your reads align to the human genome and that no reads align uniquely to other organisms:
 
 ![](images/fastq_screen.png){width="1200"}
-
-------------------------------------------------------------------------
 
 ### FastQC
 
@@ -235,8 +194,6 @@ The software gives a *pass*, *fail* or *warning* flag for each test based on wha
 ![](images/Random_hexamer_priming.png){width="700"}
 
 Visit the [QCFail](https://sequencing.qcfail.com/author/simon/) website for more examples and advice on quality control for NGS datasets.
-
-------------------------------------------------------------------------
 
 ### MultiQC
 
@@ -259,8 +216,6 @@ If we look at the *adapter content* and *over represented sequences* sections we
 
 <br>
 
-------------------------------------------------------------------------
-
 ## 4. Shell scripts, pipelining and parallelisation
 
 Up until now we have run command line tools on each one of our datasets in serial, this means they run one after the other. In this tutorial we only have a few small datasets and the tools run relatively quickly, but this approach won't scale well to multiple large datasets. A more efficient approach is to create a **script** that will run all of our datasets in **parallel**.
@@ -281,8 +236,6 @@ ps f
 -   *ps* is the *process status* tool which shows jobs running in the current session, we should see 5 instances of fastqc running.
 
 This will rerun the fastqc jobs and should be much quicker.
-
-------------------------------------------------------------------------
 
 ### Shell scripts
 
@@ -310,14 +263,12 @@ emacs -nw pipeline.sh
 
     ## PREPARATION
 
-    ## Create a web directory to view output                         
-    ln -s $PWD ~/public_html/
     ## Create a folder for fastq files
     mkdir fastq
     ## Link the raw data to the fastq folder
-    ls /library/training/RNA-seq_analysis/data/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
+    ls /home2/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
     ## Link the annotation folder
-    ln -s /homes/library/training/RNA-seq_analysis/annotation .
+    ln -s /home2/swebb/training/RNA-seq_analysis/annotation .
 
     ## QC
 
@@ -364,8 +315,6 @@ Let's move on with our RNA-seq analysis. Every time we run a tool that creates n
 
 Although shell scripts save all of your commands they do not necessarily track the versions of software that you use or the current state of your environment and other tool dependencies. They are also unaware of the workflow of your data. More advanced methods of pipelining and containerisation are recommended for fully reproducible analyses using workflow systems such as **NextFlow** or **Snakemake**.
 
-------------------------------------------------------------------------
-
 ## 5. Quality trimming and adapter removal
 
 From the FastQC report we can see that the overall quality of our sequencing is good, however it is good practice to perform some pre-processing and filtering of reads. Poor quality sequencing can make a read less alignable, so it is good practice to **quality trim** the ends of reads until we get to the high quality portion. Trimming is not always necessary as some mapping programs will trim the reads for you or perform **soft clipping** where only part of a read is required to align, but studies have shown that pre-processing generally improves alignment rate if done correctly.
@@ -375,8 +324,6 @@ Sequencing libraries are normally constructed by ligating adapters to fragments 
 An example of adapter contamination at the end of reads: ![](images/Adapter_contamination.png){width="700"}
 
 Once reads have been trimmed they will vary in length. You may want to **filter** out reads that are now too short to be uniquely mapped. Normally a cutoff of 20-30bp is standard.
-
-------------------------------------------------------------------------
 
 ### Trim Galore!
 
@@ -422,8 +369,6 @@ multiqc -f -o trim_galore trim_galore
 
 Remember to add the trim_galore and multiqc steps to your **pipeline.sh** file.
 
-------------------------------------------------------------------------
-
 ### Other trimming software worth investigating
 
 Trim Galore simplifies the Cutadapt command and also runs fastqc on the trimmed data. However, it is worth looking through the full functionality of Cutadapt which has many options for filtering and trimming reads. **Trimmomatic** is another tool which has a very sensitive algorithm for detecting adapters, especially in paired-end reads.
@@ -449,8 +394,6 @@ It may be worth looking into a few other tools for quality control of RNA-seq da
 
 <br>
 
-------------------------------------------------------------------------
-
 ## 6. Read Alignment
 
 There are many tools available for mapping reads to genomes and transcriptomes, each with their own purposes and strengths. RNA-seq data requires a *splice-aware* aligner that can handle splice junctions in the sequencing reads. The two most popular aligners are [STAR](https://github.com/alexdobin/STAR), which is very fast, and [HISAT2](http://daehwankimlab.github.io/hisat2/manual/), which is very accurate.
@@ -463,7 +406,7 @@ First, we need to select a reference genome to align to. Every time a reference 
 
 We are going to map our reads to the latest release of the human genome (**hg38** or **GRCh38**). We need to create an index file from the GRCh38 fasta sequence so that STAR can quickly access the reference sequences. Many of these indexes are pre-computed on our servers and stored under the /homes/genomes directory for everyone to use. The indexes for this workshop have are available in the annotation we linked earlier.
 
-The code below shows how these were generated with STAR. You do not need to run this again.
+The code below shows how these were generated with STAR. You do not need to run this again!!!!xs
 
 ``` bash
 ## Download sequence files and latest annotations from Ensembl
@@ -477,11 +420,9 @@ The code below shows how these were generated with STAR. You do not need to run 
 #STAR --runMode genomeGenerate --genomeDir STAR_index_hg38.ensembl106 --genomeFastaFiles Homo_sapiens.GRCh38.dna.primary_assembly.fa --sjdbGTFfile Homo_sapiens.GRCh38.106.gtf --sjdbOverhang 100 --runThreadN 20
 ```
 
-------------------------------------------------------------------------
-
 ### Mapping reads with STAR
 
-Now that we have an index we can align our reads to the human genome with STAR.
+Now that we have an index, we can align our reads to the human genome with STAR.
 
 ::: blue
 ``` bash
@@ -519,8 +460,6 @@ less STAR/Control_1.Log.final.out
 -   How many of these align to a single location on the genome?
 -   How many reads map to multiple locations?
 :::
-
-------------------------------------------------------------------------
 
 ### SAM/BAM/CRAM format and Samtools
 
@@ -582,8 +521,6 @@ The third column represents the number of alignments.
 :::
 
 <br>
-
-------------------------------------------------------------------------
 
 ## 7. Post alignment processing
 
@@ -832,8 +769,6 @@ We recommend IGV as it allows you to quickly explore your data. Several other ge
 
 <br>
 
-------------------------------------------------------------------------
-
 ## 9. Quantifying expression levels
 
 Once we have inspected our data and are happy with our alignments, we can quantify expression levels for annotated transcripts. Pseudo-alignment tools, such as [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html), map sequencing reads directly to transcripts. They are extremely fast, can handle multi-map reads, and take into account multiple isoforms, transcript lengths and sequencing biases when estimating abundance.
@@ -873,8 +808,6 @@ Like STAR, Salmon requires an index for alignment. The indexes require fasta seq
 Creating Salmon indexes is more complicated than STAR but the bioinformatics team can help you out if you need to do this. Several pre-computed indexes exist in /homes/genomes. You can also read more about the method [here](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment).
 :::
 
-------------------------------------------------------------------------
-
 ### Pseudo-alignment with Salmon
 
 We can now run Salmon to estimate expression levels of transcripts. Biases in sequencing data can lead to over/under estimation of expression of certain transcripts and Salmon has some functionality to overcome this. We will use the `salmon quant` command with the following arguments:
@@ -904,13 +837,9 @@ less salmon/Control_1/quant.sf
 For each transcript we have five columns:
 
 -   The transcript identifier
-
 -   The transcript length (in bp)
-
 -   The effective length (described in detail below)
-
 -   TPM (transcripts per million), which is computed using the effective length
-
 -   The estimated read count ('pseudocount')
 
 ::: discussion
@@ -931,8 +860,6 @@ The sequence composition of a transcript affects how many reads are sampled from
 :::
 
 <br>
-
-------------------------------------------------------------------------
 
 ## 10. Finish your script
 
@@ -961,8 +888,6 @@ Take a look at the multiqc report in your public folder:
 -   Look at the 'Per Base Sequence Content' plot. What's going on at the 3' end?
 :::
 
-------------------------------------------------------------------------
-
 ### Tidy Up!
 
 Files are large and disk space is expensive, remove any unwanted or temporary files from your folder. We should always keep the raw data (fastq) and our final processed datasets (BAM, bigWig, quant.sf etc) as well as the code we used to generate them. Where you can, convert files to compressed or binary formats to save space e.g. fq to fq.gz, SAM to BAM, wig to bigWig.
@@ -973,8 +898,6 @@ Files are large and disk space is expensive, remove any unwanted or temporary fi
 rm trim_galore/*trim*fq.gz #Remove trimmed fastq temporary files
 rm STAR/*.wig #Remove wig files once converted to bigWig
 ```
-
-------------------------------------------------------------------------
 
 ### Running your complete script
 
