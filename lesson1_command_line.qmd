@@ -164,14 +164,15 @@ Next we want to assess the quality of our sequencing data and check for any bias
 
 ### FastQ screen
 
-It is useful to know if your sequencing library contains the types of sequences you expect. [FastQ Screen](http://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/) searches for contaminants by mapping a sample of your reads to different genomes. It allows you to specify a custom set of genomes, e.g. all of the organisms you work on, along with PhiX, vectors and other contaminants commonly seen in sequencing experiments. We will run a screen of our data against a few default genomes:
+It is useful to know if your sequencing library contains the types of sequences you expect. [FastQ Screen](http://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/) is a program which searches for contaminants by mapping a sample of your reads to different genomes. It allows you to specify a custom set of genomes, e.g. all of the organisms you work on, along with PhiX, vectors and other contaminants commonly seen in sequencing experiments. We will not run this in the workshop but an example is given below.
 
 ``` bash
-cd .. #Move up a directory again
-fastq_screen --conf /homes/genomes/tool_configs/fastq_screen/fastq_screen.conf fastq/*fq.gz --outdir fastq # * is a wild card character so includes all files that end fq.gz
+# Example, do not run
+fastq_screen fastq/*fq.gz --outdir fastq 
+# * is a wild card character so includes all files that end fq.gz
 ```
 
-Once complete, take a look at the output images in your browser via RStudio. This shows that most of your reads align to the human genome and that no reads align uniquely to other organisms:
+The output shows that most of the reads align to the human genome and that no reads align uniquely to other organisms:
 
 ![](images/fastq_screen.png){width="1200"}
 
@@ -203,14 +204,14 @@ We can view summaries of multiple reports at once by using [multiqc](http://mult
 multiqc -o fastq fastq
 ```
 
-MultiQC searches for report files in a directory and compiles them into a single report. Open the *multiqc_report.html* file in the fastq directory via a web browser to see how the raw datasets compare. Here we have the output of FastQ_screen and FastQC, but MultiQC works with the outputs of many other tools which we'll see later.
+MultiQC searches for report files in a directory and compiles them into a single report. Open the *multiqc_report.html* file in the fastq directory via a web browser to see how the raw datasets compare. Here we have the output FastQC. MultiQC works with the outputs of many other tools, including Fastq_Screen. We will see more of these later.
 
 If we look at the *adapter content* and *over represented sequences* sections we can see a small amount of contamination particularly at the ends of the sequencing reads.
 
 ::: key-points
 <h2><i class="fas fa-thumbtack"></i> Key points:</h2>
 
--   Generate QC reports with fastq_screen, fastQC and multiqc
+-   Generate QC reports with fastQC and multiqc
 -   Learn to assess and perform quality control of raw reads
 :::
 
@@ -222,7 +223,7 @@ Up until now we have run command line tools on each one of our datasets in seria
 
 ### parallel
 
-Unix has a program called **parallel** which allows you to run tools on multiple datasets at the same time. The following command would list all of your gzipped fastq files and pipe "\|" them into parallel.
+Unix has a program called **parallel** which allows you to run tools on multiple datasets at the same time. The following command lists all of your gzipped fastq files and pipes "\|" them into parallel.
 
 ``` bash
 ls fastq/*fq.gz | parallel -j 6 fastqc {} &
@@ -233,7 +234,7 @@ ps f
 -   The parallel *-j* flag stands for *jobs* and tells parallel to run 6 processes at the same time.
 -   In this case we are running fastqc and the *{}* is a place holder for the filenames we are piping in.
 -   The *&* character runs these jobs in the background so we can continue to use the terminal.
--   *ps* is the *process status* tool which shows jobs running in the current session, we should see 5 instances of fastqc running.
+-   *ps* is the *process status* tool which shows jobs running in the current session, we should see 6 instances of fastqc running.
 
 This will rerun the fastqc jobs and should be much quicker.
 
@@ -256,10 +257,10 @@ less samples.txt
 Now let's create our pipeline script. We'll start by creating and opening a new file called **pipeline.sh**. The .sh stands for shell which is essentially just a name for the command line environment.
 
 ``` bash
-emacs -nw pipeline.sh
+emacs pipeline.sh
 ```
 
-**Emacs** is a Unix text editor and the -nw flag opens a new window for editing. Here we are going to paste all of the commands we have used so far:
+**Emacs** is a Unix text editor. Here we are going to paste all of the commands we have used so far:
 
     ## PREPARATION
 
@@ -271,9 +272,6 @@ emacs -nw pipeline.sh
     ln -s /data/swebb/training/RNA-seq_analysis/annotation .
 
     ## QC
-
-    ## FastQ Screen
-    fastq_screen --conf /homes/genomes/tool_configs/fastq_screen/fastq_screen.conf fastq/*fq.gz --outdir fastq
 
     ## FastQC
     fastqc fastq/*.fq.gz
@@ -300,8 +298,6 @@ See if you can adapt the QC portion of the script to use parallel.
 <h2><i class="far fa-eye"></i></h2>
 
 ``` bash
-cat samples.txt | parallel -j 6 "fastq_screen --conf /homes/genomes/tool_configs/fastq_screen/fastq_screen.conf fastq/{}.fq.gz  --outdir fastq"
-
 cat samples.txt | parallel -j 6 "fastqc fastq/{}.fq.gz"
 ```
 :::
@@ -359,6 +355,8 @@ less trim_galore/Control_1.fq.gz_trimming_report.txt
 -   How many reads were discarded for being too short?
 :::
 
+<br>
+
 Let's compare the fastqc reports. Run **multiqc** on the trimmed data and compare this with the reports for the raw data.
 
 ::: blue
@@ -404,9 +402,9 @@ There are many tools available for mapping reads to genomes and transcriptomes, 
 
 First, we need to select a reference genome to align to. Every time a reference genome is released or updated it is given a new name, often referred to as the genome build or assembly (..hg18, hg19, hg38). It is important to realise that different builds of the same genome are different sequences and thus their co-ordinate systems are incomparable. For instance position 10000000 on chr1 is T in hg19 and G in hg38.
 
-We are going to map our reads to the latest release of the human genome (**hg38** or **GRCh38**). We need to create an index file from the GRCh38 fasta sequence so that STAR can quickly access the reference sequences. Many of these indexes are pre-computed on our servers and stored under the /homes/genomes directory for everyone to use. The indexes for this workshop have are available in the annotation we linked earlier.
+We are going to map our reads to a recent release of the human genome (**hg38** or **GRCh38**). We need to create an index file from the GRCh38 fasta sequence so that STAR can quickly access the reference sequences. Many of these indexes are pre-computed on our servers and stored under the /homes/genomes directory for everyone to use. The indexes for this workshop have are available in the annotation we linked earlier.
 
-The code below shows how these were generated with STAR. You do not need to run this again!!!!xs
+The code below shows how these were generated with STAR. You do not need to run this again, it will take a long time to run!!!
 
 ``` bash
 ## Download sequence files and latest annotations from Ensembl
@@ -561,7 +559,7 @@ Multimap and duplicate reads are often confused so it is important to understand
 -   **Multimap reads** = The read exists once in your library and aligns to multiple repeat locations in the reference genome.
 -   **Duplicate reads** = Multiple unique reads with the same sequence that align to identical locations in the genome.
 
-![pic](images/multi.png){alt="pic" width="600"}
+![](images/multi.png){alt="pic" width="600"}
 
 **Multimap reads** are difficult to analyse as their ambiguity can confound results. Many applications require the use of **unique** alignments only, thus multimap reads often need to be removed from your BAM file.
 
@@ -685,7 +683,7 @@ cd ../
 
 It is best to download the [desktop app](https://www.broadinstitute.org/igv/) for use on your own machine but if you can also access the web app at <https://igv.org/app/>.
 
-Open IGV and set the genome to **hg38**, then find your *visualisation* folder online. In the desktop version you can drag and drop files into IGV. If you are using the webapp you will need to download the files you require and open them using the *tracks* menu.
+Open IGV and set the genome to **hg38**, then find your *visualisation* folder in RStudio. You will need to download the files you require and open them locally in IGV.
 
 Load the two bigWig tracks for MOV10_OE_1 into IGV:
 
@@ -917,9 +915,6 @@ ln -s /library/training/RNA-seq_analysis/annotation .
 
 ## QC
 
-## FastQ Screen
-cat samples.txt | parallel -j 6 "fastq_screen --conf /homes/genomes/tool_configs/fastq_screen/fastq_screen.conf fastq/{}.fq.gz  --outdir fastq"
-
 ## FastQC
 cat samples.txt | parallel -j 6 "fastqc fastq/{}.fq.gz"
 
@@ -997,11 +992,7 @@ This will take several minutes to run so it's best to set it running then take a
 ::: key-points
 <h2><i class="fas fa-thumbtack"></i> Key points:</h2>
 
-## 
-
 -   Generate report files for your entire analysis with **MultiQC**
 -   Save your analysis as a script and run it in one go
 -   Learn to manage your data
 :::
-
-<br>

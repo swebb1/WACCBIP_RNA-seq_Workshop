@@ -298,7 +298,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li><p>Link the data folder to your project folder using the Linux <code>ln</code> command</p>
 <ul>
-<li><code>ln -s /home2/swebb/training/RNA-seq_analysis/lesson_2/salmon .</code></li>
+<li><code>ln -s /data/swebb/training/RNA-seq_analysis/lesson_2/salmon .</code></li>
 </ul></li>
 </ul>
 </section>
@@ -454,7 +454,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">### YOU DO NOT NEED TO RUN THIS CODE!!</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Make a Transcript DB object from our gene annotation GTF file</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>txdb<span class="ot">&lt;-</span><span class="fu">makeTxDbFromGFF</span>(<span class="at">organism =</span> <span class="st">"Homo sapiens"</span>,<span class="at">file =</span> <span class="st">"/home2/swebb/training/RNA-seq_analysis/annotation/Homo_sapiens.GRCh38.106.gtf"</span>,<span class="at">format =</span> <span class="st">"gtf"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>txdb<span class="ot">&lt;-</span><span class="fu">makeTxDbFromGFF</span>(<span class="at">organism =</span> <span class="st">"Homo sapiens"</span>,<span class="at">file =</span> <span class="st">"/data/swebb/training/RNA-seq_analysis/annotation/Homo_sapiens.GRCh38.106.gtf"</span>,<span class="at">format =</span> <span class="st">"gtf"</span>)</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>txdb<span class="ot">&lt;-</span><span class="fu">makeTxDbFromGFF</span>(<span class="at">organism =</span> <span class="st">"Homo sapiens"</span>,<span class="at">file =</span> <span class="st">"RNA-seq_anannotation/Homo_sapiens.GRCh38.106.gtf"</span>,<span class="at">format =</span> <span class="st">"gtf"</span>)</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Extract mappings from transcriptID to geneID</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">keys</span>(txdb, <span class="at">keytype =</span> <span class="st">"TXNAME"</span>)</span>
@@ -1277,6 +1277,20 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       });
     }
   }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+    var links = window.document.querySelectorAll('a:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+          // target, if specified
+          link.setAttribute("target", "_blank");
+      }
+    }
 });
 </script>
 </div> <!-- /content -->
