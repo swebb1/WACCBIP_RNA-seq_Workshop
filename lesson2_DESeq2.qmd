@@ -79,7 +79,7 @@ To access these files:
 
 -   Link the data folder to your project folder using the Linux `ln` command
 
-    -   `ln -s /home2/swebb/training/RNA-seq_analysis/lesson_2/salmon .`
+    -   `ln -s /data/swebb/training/RNA-seq_analysis/lesson_2/salmon .`
 
 ### Experimental design
 
@@ -203,7 +203,7 @@ We must supply a map between transcript IDs and gene IDs for our annotations, so
 ### YOU DO NOT NEED TO RUN THIS CODE!!
 
 ## Make a Transcript DB object from our gene annotation GTF file
-txdb<-makeTxDbFromGFF(organism = "Homo sapiens",file = "/home2/swebb/training/RNA-seq_analysis/annotation/Homo_sapiens.GRCh38.106.gtf",format = "gtf")
+txdb<-makeTxDbFromGFF(organism = "Homo sapiens",file = "/data/swebb/training/RNA-seq_analysis/annotation/Homo_sapiens.GRCh38.106.gtf",format = "gtf")
 txdb<-makeTxDbFromGFF(organism = "Homo sapiens",file = "RNA-seq_anannotation/Homo_sapiens.GRCh38.106.gtf",format = "gtf")
 ## Extract mappings from transcriptID to geneID
 k <- keys(txdb, keytype = "TXNAME")

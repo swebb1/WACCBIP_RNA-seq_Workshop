@@ -55,8 +55,8 @@ Please install [IGV](https://software.broadinstitute.org/software/igv/download) 
 <h2><i class="fas fa-thumbtack"></i> Key points:</h2>
 
 -   Make sure you can log in to the bioinformatics server
--   Create a personal web directory
--   Install IGV on your own machine
+-   Make sure you can log in to RStudio
+-   Check that IGV is installed on your machine
 :::
 
 ## 2. RNA-seq sequencing data
@@ -124,13 +124,13 @@ Next, create a subfolder called **fastq** for all of our sequence files and link
 
 ``` bash
 mkdir fastq
-ln -s /home2/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz fastq/
+ln -s /data/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz fastq/
 ```
 
 As well as the raw data we will also need access to annotations and reference sequences for the human genome/transcriptome. These are provided for this workshop and should also be linked to your folder:
 
 ``` bash
-ln -s /home2/swebb/training/RNA-seq_analysis/annotation .
+ln -s /data/swebb/training/RNA-seq_analysis/annotation .
 ```
 
 ### FastQ files
@@ -266,9 +266,9 @@ emacs -nw pipeline.sh
     ## Create a folder for fastq files
     mkdir fastq
     ## Link the raw data to the fastq folder
-    ls /home2/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
+    ls /data/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
     ## Link the annotation folder
-    ln -s /home2/swebb/training/RNA-seq_analysis/annotation .
+    ln -s /data/swebb/training/RNA-seq_analysis/annotation .
 
     ## QC
 
