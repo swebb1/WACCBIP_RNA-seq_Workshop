@@ -136,7 +136,7 @@ DESeq2 has internal methods for:
 
 -   Multiple testing correction (FDR adjusted p-value)
 
-![](images/DESeq2.png){width="300,align=\"center\""}
+![](images/DESeq2.png){width="300",align="center"}
 
 ### Comprehensive tutorials
 
