@@ -138,8 +138,7 @@ ln -s /data/swebb/training/RNA-seq_analysis/annotation .
 Sequencing data will typically be provided to you in **fastq** format (.fq or .fastq) or as a compressed gzipped fastq (.fq.gz) in order to save space. We can view a gzipped file with the zless command, let's take a look:
 
 ``` bash
-cd fastq # Move into the fastq directory (if you haven't already)
-zless Control_1.fq.gz | head -n 12
+zless fastq/Control_1.fq.gz | head -n 12
 ```
 
 [Fastq](https://en.wikipedia.org/wiki/FASTQ_format) files contain 4 lines per sequenced read:
@@ -420,12 +419,12 @@ The code below shows how these were generated with STAR. You do not need to run 
 
 ### Mapping reads with STAR
 
-Now that we have an index, we can align our reads to the human genome with STAR.
+Now that we have an index, we can align our reads to the human genome with STAR. Because STAR uses a large amount of memory, we are only going to map reads to chr1 for this workshop, however we will look at the complete mapping as a group.
 
 ::: blue
 ``` bash
 mkdir STAR ## make a new folder for read alignments
-cat samples.txt | parallel -j 6 "STAR --genomeDir annotation/STAR_index_hg38.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 4 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM"
+cat samples.txt | parallel -j 3 "STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"
 ```
 :::
 
@@ -440,6 +439,8 @@ We are using the following parameters:
 -   sjdbGTFfile : A gene model and splice junction annotation file in gtf format
 -   outWigType : Additional output of read coverage profiles
 -   outWigNorm : Normalisation strategy for read coverage profiles
+-   genomeLoadLoadAndRemove : The reference genome index is very large (30Gb) and uses a lot of memory. This option allows users to share the same index in memory.
+-   \--limitBAMsortRAM : Set the RAM limit for sorting BAM files
 
 Note that we do not need to include the --sjdbGTFfile here as it was already used in creating the index. We can provide the annotations at either step or provide a different file with additional annotation.
 
@@ -454,7 +455,7 @@ less STAR/Control_1.Log.final.out
 ::: discussion
 <h2><i class="far fa-bell"></i> Discussion</h2>
 
--   How many aligned reads do you have?
+-   How many input reads did we have?
 -   How many of these align to a single location on the genome?
 -   How many reads map to multiple locations?
 :::
@@ -694,7 +695,6 @@ First, let's navigate the chromosome:
 -   Use the *+* / *-* zoom bar at the top right
 -   Drag and highlight an area to zoom on the genome ruler
 -   Type a position or gene identifier in to the search box
--   If we zoom in close enough our BAM file will load and we can investigate alignments of individual reads
 
 Now let's customise our view:
 
@@ -725,7 +725,7 @@ There are two large spikes on chr1 (forward strand) and chr6 (reverse strand).
 
 -   What are these genes?
 -   Would you expect to see similar spikes in the control?
--   Load the control bigWigs and check.
+-   Load a control bigWig and check.
 -   Were we correct in assuming our data was reverse stranded?
 :::
 
@@ -932,7 +932,7 @@ multiqc -f -o trim_galore trim_galore
 mkdir STAR ## make a new folder for read alignments
 
 ## run STAR
-cat samples.txt | parallel -j 6 "STAR --genomeDir annotation/STAR_index_hg38.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 4 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM"
+cat samples.txt | parallel -j 3 "STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"
 
 ## index STAR
 cat samples.txt | parallel -j 6 "samtools index STAR/{}.Aligned.sortedByCoord.out.bam"
@@ -958,7 +958,7 @@ cd ../
 mkdir salmon ## Make a folder for salmon output
 
 ## run Salmon
-cat samples.txt | parallel -j 6 "salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"
+cat samples.txt | parallel -j 1 "salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"
 
 ## Final report
 multiqc -f .

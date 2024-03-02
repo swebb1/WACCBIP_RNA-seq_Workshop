@@ -393,8 +393,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="fastq-files" class="level3">
 <h3 class="anchored">FastQ files</h3>
 <p>Sequencing data will typically be provided to you in <strong>fastq</strong> format (.fq or .fastq) or as a compressed gzipped fastq (.fq.gz) in order to save space. We can view a gzipped file with the zless command, let’s take a look:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> fastq <span class="co"># Move into the fastq directory (if you haven't already)</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">zless</span> Control_1.fq.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zless</span> fastq/Control_1.fq.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><a href="https://en.wikipedia.org/wiki/FASTQ_format">Fastq</a> files contain 4 lines per sequenced read:</p>
 <ul>
 <li>Line 1 begins with an ‘@’ character and is followed by a sequence identifier and an optional description</li>
@@ -617,10 +616,10 @@ Solution
 </section>
 <section id="mapping-reads-with-star" class="level3">
 <h3 class="anchored">Mapping reads with STAR</h3>
-<p>Now that we have an index, we can align our reads to the human genome with STAR.</p>
+<p>Now that we have an index, we can align our reads to the human genome with STAR. Because STAR uses a large amount of memory, we are only going to map reads to chr1 for this workshop, however we will look at the complete mapping as a group.</p>
 <div class="blue">
 <div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> STAR <span class="co">## make a new folder for read alignments</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"STAR --genomeDir annotation/STAR_index_hg38.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 4 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 3 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We are using the following parameters:</p>
 <ul>
@@ -633,6 +632,8 @@ Solution
 <li>sjdbGTFfile : A gene model and splice junction annotation file in gtf format</li>
 <li>outWigType : Additional output of read coverage profiles</li>
 <li>outWigNorm : Normalisation strategy for read coverage profiles</li>
+<li>genomeLoadLoadAndRemove : The reference genome index is very large (30Gb) and uses a lot of memory. This option allows users to share the same index in memory.</li>
+<li>--limitBAMsortRAM : Set the RAM limit for sorting BAM files</li>
 </ul>
 <p>Note that we do not need to include the –sjdbGTFfile here as it was already used in creating the index. We can provide the annotations at either step or provide a different file with additional annotation.</p>
 <p>We recommend reading the <a href="https://github.com/alexdobin/STAR/blob/master/doc/STARmanual.pdf">STAR manual</a> to fully understand all of the parameters and output options. Running alignment software with default parameters may not be the best option for your data.</p>
@@ -643,7 +644,7 @@ Solution
 <i class="far fa-bell"></i> Discussion
 </h2>
 <ul>
-<li>How many aligned reads do you have?</li>
+<li>How many input reads did we have?</li>
 <li>How many of these align to a single location on the genome?</li>
 <li>How many reads map to multiple locations?</li>
 </ul>
@@ -827,7 +828,6 @@ Solution
 <li>Use the <em>+</em> / <em>-</em> zoom bar at the top right</li>
 <li>Drag and highlight an area to zoom on the genome ruler</li>
 <li>Type a position or gene identifier in to the search box</li>
-<li>If we zoom in close enough our BAM file will load and we can investigate alignments of individual reads</li>
 </ul>
 <p>Now let’s customise our view:</p>
 <ol type="1">
@@ -850,7 +850,7 @@ Solution
 <ul>
 <li>What are these genes?</li>
 <li>Would you expect to see similar spikes in the control?</li>
-<li>Load the control bigWigs and check.</li>
+<li>Load a control bigWig and check.</li>
 <li>Were we correct in assuming our data was reverse stranded?</li>
 </ul>
 </div>
@@ -1034,7 +1034,7 @@ Solution
 <span id="cb38-28"><a href="#cb38-28" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> STAR <span class="co">## make a new folder for read alignments</span></span>
 <span id="cb38-29"><a href="#cb38-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-30"><a href="#cb38-30" aria-hidden="true" tabindex="-1"></a><span class="co">## run STAR</span></span>
-<span id="cb38-31"><a href="#cb38-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"STAR --genomeDir annotation/STAR_index_hg38.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 4 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM"</span></span>
+<span id="cb38-31"><a href="#cb38-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 3 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span>
 <span id="cb38-32"><a href="#cb38-32" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-33"><a href="#cb38-33" aria-hidden="true" tabindex="-1"></a><span class="co">## index STAR</span></span>
 <span id="cb38-34"><a href="#cb38-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools index STAR/{}.Aligned.sortedByCoord.out.bam"</span></span>
@@ -1060,7 +1060,7 @@ Solution
 <span id="cb38-54"><a href="#cb38-54" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
 <span id="cb38-55"><a href="#cb38-55" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-56"><a href="#cb38-56" aria-hidden="true" tabindex="-1"></a><span class="co">## run Salmon</span></span>
-<span id="cb38-57"><a href="#cb38-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span>
+<span id="cb38-57"><a href="#cb38-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 1 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span>
 <span id="cb38-58"><a href="#cb38-58" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-59"><a href="#cb38-59" aria-hidden="true" tabindex="-1"></a><span class="co">## Final report</span></span>
 <span id="cb38-60"><a href="#cb38-60" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> .</span>
