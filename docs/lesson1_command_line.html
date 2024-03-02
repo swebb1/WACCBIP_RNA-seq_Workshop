@@ -380,7 +380,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </section>
 <section id="obtaining-data" class="level3">
 <h3 class="anchored" data-anchor-id="obtaining-data">Obtaining data</h3>
-<p>First, make a new directory for this tutorial and move into that directory. Then link the directory to your <code>public_html</code> folder as we are going to make everything public in this tutorial.</p>
+<p>First, make a new directory for this tutorial and move into that directory.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> </span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> RNA-seq_workshop</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> RNA-seq_workshop</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -475,8 +475,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="shell-scripts" class="level3">
 <h3 class="anchored">Shell scripts</h3>
 <p>Putting all of your commands into a script is good practice for keeping track of your analysis and for reproducibility. We want to write scripts so they can be used again on different datasets and avoid <em>hardcoding</em> the names of files.</p>
-<p>First, let’s create a file that lists our sample names so we can feed this into our pipeline. We could just type this manually or use a spreadsheet and export it as a tab-separated file. We will use a bit of unix text processing, don’t worry too much if you don’t understand the command.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> fastq/<span class="pp">*</span>fq.gz <span class="kw">|</span> <span class="ex">parallel</span> basename <span class="kw">|</span> <span class="fu">sed</span> s/.fq.gz// <span class="op">&gt;</span> samples.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>First, let’s create a file that lists our sample names so we can feed this into our pipeline. We could just type this manually or use a spreadsheet and export it as a tab-separated file. We will use a bit of unix text processing, don’t worry too much if you don’t understand the command. For this exercise we will only use one of the replicates.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> fastq/<span class="pp">*</span>_1.fq.gz <span class="kw">|</span> <span class="ex">parallel</span> basename <span class="kw">|</span> <span class="fu">sed</span> s/.fq.gz// <span class="op">&gt;</span> samples.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Here, the fastq file names are ‘piped’ into parallel as above but we use a regular expression within <code>sed</code> to remove the file name suffix. The output file <code>samples.txt</code> now contains a list of our sample names. Take a look at the file with the <code>less</code> command. You can type <code>q</code> to exit.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> samples.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Now let’s create our pipeline script. We’ll start by creating and opening a new file called <strong>pipeline.sh</strong>. The .sh stands for shell which is essentially just a name for the command line environment.</p>
@@ -490,6 +490,9 @@ mkdir fastq
 ls /data/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
 ## Link the annotation folder
 ln -s /data/swebb/training/RNA-seq_analysis/annotation .
+## Create sample file
+ls fastq/*_1.fq.gz | parallel basename | sed s/.fq.gz// &gt; samples.txt
+
 
 ## QC
 
@@ -516,7 +519,7 @@ Solution
 <h2 class="anchored">
 <i class="far fa-eye"></i>
 </h2>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"fastqc fastq/{}.fq.gz"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"fastqc fastq/{}.fq.gz"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </details>
 </div>
@@ -546,7 +549,7 @@ Solution
 <div class="blue">
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Run this code then add it to your pipeline.sh file!</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> trim_galore <span class="co">## Create a new folder for trimmed data</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>To view a trim_galore report:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> trim_galore/Control_1.fq.gz_trimming_report.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -619,7 +622,7 @@ Solution
 <p>Now that we have an index, we can align our reads to the human genome with STAR. Because STAR uses a large amount of memory, we are only going to map reads to chr1 for this workshop, however we will look at the complete mapping as a group.</p>
 <div class="blue">
 <div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> STAR <span class="co">## make a new folder for read alignments</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 3 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We are using the following parameters:</p>
 <ul>
@@ -667,7 +670,7 @@ Solution
 <div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-H</span> STAR/Control_1.Aligned.sortedByCoord.out.bam <span class="kw">|</span> <span class="fu">less</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>We can index our bam files with <code>samtools index</code>. This creates an index file for quick programmatic access to the binary file. Indexing is required for some of the samtools programs to work as well as for viewing the reads on genome browsers.</p>
 <div class="blue">
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools index STAR/{}.Aligned.sortedByCoord.out.bam"</span> <span class="co">## Index the bam files</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools index STAR/{}.Aligned.sortedByCoord.out.bam"</span> <span class="co">## Index the bam files</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The command <code>samtools idxstats</code> outputs the number of reads aligned to each sequence in our reference.</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> idxstats STAR/Control_1.Aligned.sortedByCoord.out.bam</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -705,7 +708,7 @@ Solution
 <p>Flagstat seems to report more alignments than the number of reads shown in our STAR report, how can this be? Our BAM file contains one record per alignment and some reads may align to multiple locations. STAR assigns each read a primary alignment, which is selected randomly from the top scoring alignments.</p>
 <p>We can use <code>samtools view -f</code> to include, and <code>-F</code> to exclude reads with a given SAM flag. The flag 260 is the sum of 4 (read is unmapped) and 256 (not primary alignment). This will filter unmapped reads and non-primary alignments to give us a single alignment for each mapped read.</p>
 <div class="blue">
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>-bh</code> option tells samtools view to output in BAM format and to include the header.</p>
 <p>If we run <code>samtools flagstat</code> on this filtered bam file we should now have one alignment per mapped read.</p>
@@ -724,7 +727,7 @@ Solution
 <p>Alignment tools assign a <strong>mapping quality</strong> to each read (column 5 in BAM) between 0 and 255 that describes the confidence in the alignment position.</p>
 <p>You should be aware that <a href="https://sequencing.qcfail.com/articles/mapq-values-are-really-useful-but-their-implementation-is-a-mess/">mapping qualities differ between mapping tools</a>. STAR uses mapping quality scores of 0 and 255 to represent multimap and unique reads respectively. Filtering out reads with a mapping quality &lt; 255 means that all remaining reads align to a single unique position. We can use <code>samtools view -q</code> to filter based on mapping quality.</p>
 <div class="blue">
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><strong>Duplicate reads</strong> are often observed as tall spikes in your read depth profile where reads are stacked directly on top of each other. A high level of duplication in your library may be due to over amplification by PCR or contamination. In RNA-seq experiments the chances of selecting identical sequences are much higher as our sample size is much smaller (length of transcriptome vs length of genome) and multiple copies of the same sequence (transcripts) exist independently. Thus, it is common practice to retain duplicate reads.</p>
 <div class="resources">
@@ -776,7 +779,7 @@ Solution
 <p>Let’s convert the <strong>unique</strong> files to bigWig format for visualisation. The tool <strong>wigToBigWig</strong> requires three arguments, an input file, a file of chromosome lengths, and the name of the output file.</p>
 <div class="blue">
 <div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> visualisation <span class="co">## Create a folder for visualisation files</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <hr>
 </section>
@@ -937,7 +940,7 @@ Solution
 </ul>
 <div class="blue">
 <div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <strong>library type</strong> describes the type of reads used in the experiment. Here we have single (S), reverse-stranded (R) reads. Check the documentation for other arguments.</p>
 <p>The main output of Salmon is a <em>quant.sf</em> file, take a look at one of these files:</p>
@@ -1011,64 +1014,66 @@ Solution
 <span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="co">## Create a folder for fastq files</span></span>
 <span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> fastq</span>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="co">## Link the raw data to the fastq folder</span></span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> /library/training/RNA-seq_analysis/data/lesson_1/fastq/<span class="pp">*</span>fq.gz <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 ln <span class="at">-s</span> {} fastq/</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> /library/training/RNA-seq_analysis/data/lesson_1/fastq/<span class="pp">*</span>fq.gz <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 ln <span class="at">-s</span> {} fastq/</span>
 <span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="co">## Link the annotation folder</span></span>
 <span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> /library/training/RNA-seq_analysis/annotation .</span>
-<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="co">## QC</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="co">## Create sample file</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> fastq/<span class="pp">*</span>_1.fq.gz <span class="kw">|</span> <span class="ex">parallel</span> basename <span class="kw">|</span> <span class="fu">sed</span> s/.fq.gz// <span class="op">&gt;</span> samples.txt</span>
 <span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="co">## FastQC</span></span>
-<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"fastqc fastq/{}.fq.gz"</span></span>
-<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a><span class="co">##Multi QC</span></span>
-<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-o</span> fastq fastq</span>
-<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a><span class="co">## PREPROCESSING </span></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="co">## QC</span></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="co">## FastQC</span></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"fastqc fastq/{}.fq.gz"</span></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a><span class="co">##Multi QC</span></span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-o</span> fastq fastq</span>
 <span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> trim_galore <span class="co">## Create a new folder for trimmed data</span></span>
-<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"</span></span>
-<span id="cb38-24"><a href="#cb38-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-25"><a href="#cb38-25" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> <span class="at">-o</span> trim_galore trim_galore</span>
+<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a><span class="co">## PREPROCESSING </span></span>
+<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-24"><a href="#cb38-24" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> trim_galore <span class="co">## Create a new folder for trimmed data</span></span>
+<span id="cb38-25"><a href="#cb38-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"</span></span>
 <span id="cb38-26"><a href="#cb38-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-27"><a href="#cb38-27" aria-hidden="true" tabindex="-1"></a><span class="co">## ALIGNMENT</span></span>
-<span id="cb38-28"><a href="#cb38-28" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> STAR <span class="co">## make a new folder for read alignments</span></span>
-<span id="cb38-29"><a href="#cb38-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-30"><a href="#cb38-30" aria-hidden="true" tabindex="-1"></a><span class="co">## run STAR</span></span>
-<span id="cb38-31"><a href="#cb38-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 3 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span>
-<span id="cb38-32"><a href="#cb38-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-33"><a href="#cb38-33" aria-hidden="true" tabindex="-1"></a><span class="co">## index STAR</span></span>
-<span id="cb38-34"><a href="#cb38-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools index STAR/{}.Aligned.sortedByCoord.out.bam"</span></span>
-<span id="cb38-35"><a href="#cb38-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-36"><a href="#cb38-36" aria-hidden="true" tabindex="-1"></a><span class="co">## filter for primary reads</span></span>
-<span id="cb38-37"><a href="#cb38-37" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"</span></span>
-<span id="cb38-38"><a href="#cb38-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-39"><a href="#cb38-39" aria-hidden="true" tabindex="-1"></a><span class="co">## filter for unique reads</span></span>
-<span id="cb38-40"><a href="#cb38-40" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"</span></span>
-<span id="cb38-41"><a href="#cb38-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-42"><a href="#cb38-42" aria-hidden="true" tabindex="-1"></a><span class="co">## Visualisation</span></span>
-<span id="cb38-43"><a href="#cb38-43" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> visualisation</span>
-<span id="cb38-44"><a href="#cb38-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-45"><a href="#cb38-45" aria-hidden="true" tabindex="-1"></a><span class="co">## Convert wig to bigWig for both strands</span></span>
-<span id="cb38-46"><a href="#cb38-46" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 <span class="st">"wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"</span></span>
-<span id="cb38-47"><a href="#cb38-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-48"><a href="#cb38-48" aria-hidden="true" tabindex="-1"></a><span class="co">## link bigWigs to visualisation folder</span></span>
-<span id="cb38-49"><a href="#cb38-49" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> visualisation</span>
-<span id="cb38-50"><a href="#cb38-50" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> ../STAR/<span class="pp">*</span>unique.bam<span class="pp">*</span> .</span>
-<span id="cb38-51"><a href="#cb38-51" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ../</span>
-<span id="cb38-52"><a href="#cb38-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-53"><a href="#cb38-53" aria-hidden="true" tabindex="-1"></a><span class="co">## Transcript abundance</span></span>
-<span id="cb38-54"><a href="#cb38-54" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
-<span id="cb38-55"><a href="#cb38-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-56"><a href="#cb38-56" aria-hidden="true" tabindex="-1"></a><span class="co">## run Salmon</span></span>
-<span id="cb38-57"><a href="#cb38-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 1 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span>
-<span id="cb38-58"><a href="#cb38-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-59"><a href="#cb38-59" aria-hidden="true" tabindex="-1"></a><span class="co">## Final report</span></span>
-<span id="cb38-60"><a href="#cb38-60" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> .</span>
-<span id="cb38-61"><a href="#cb38-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-62"><a href="#cb38-62" aria-hidden="true" tabindex="-1"></a><span class="co">## Tidy up</span></span>
+<span id="cb38-27"><a href="#cb38-27" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> <span class="at">-o</span> trim_galore trim_galore</span>
+<span id="cb38-28"><a href="#cb38-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-29"><a href="#cb38-29" aria-hidden="true" tabindex="-1"></a><span class="co">## ALIGNMENT</span></span>
+<span id="cb38-30"><a href="#cb38-30" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> STAR <span class="co">## make a new folder for read alignments</span></span>
+<span id="cb38-31"><a href="#cb38-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-32"><a href="#cb38-32" aria-hidden="true" tabindex="-1"></a><span class="co">## run STAR</span></span>
+<span id="cb38-33"><a href="#cb38-33" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"</span></span>
+<span id="cb38-34"><a href="#cb38-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-35"><a href="#cb38-35" aria-hidden="true" tabindex="-1"></a><span class="co">## index STAR</span></span>
+<span id="cb38-36"><a href="#cb38-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools index STAR/{}.Aligned.sortedByCoord.out.bam"</span></span>
+<span id="cb38-37"><a href="#cb38-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-38"><a href="#cb38-38" aria-hidden="true" tabindex="-1"></a><span class="co">## filter for primary reads</span></span>
+<span id="cb38-39"><a href="#cb38-39" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"</span></span>
+<span id="cb38-40"><a href="#cb38-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-41"><a href="#cb38-41" aria-hidden="true" tabindex="-1"></a><span class="co">## filter for unique reads</span></span>
+<span id="cb38-42"><a href="#cb38-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"</span></span>
+<span id="cb38-43"><a href="#cb38-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-44"><a href="#cb38-44" aria-hidden="true" tabindex="-1"></a><span class="co">## Visualisation</span></span>
+<span id="cb38-45"><a href="#cb38-45" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> visualisation</span>
+<span id="cb38-46"><a href="#cb38-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-47"><a href="#cb38-47" aria-hidden="true" tabindex="-1"></a><span class="co">## Convert wig to bigWig for both strands</span></span>
+<span id="cb38-48"><a href="#cb38-48" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"</span></span>
+<span id="cb38-49"><a href="#cb38-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-50"><a href="#cb38-50" aria-hidden="true" tabindex="-1"></a><span class="co">## link bigWigs to visualisation folder</span></span>
+<span id="cb38-51"><a href="#cb38-51" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> visualisation</span>
+<span id="cb38-52"><a href="#cb38-52" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> ../STAR/<span class="pp">*</span>unique.bam<span class="pp">*</span> .</span>
+<span id="cb38-53"><a href="#cb38-53" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ../</span>
+<span id="cb38-54"><a href="#cb38-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-55"><a href="#cb38-55" aria-hidden="true" tabindex="-1"></a><span class="co">## Transcript abundance</span></span>
+<span id="cb38-56"><a href="#cb38-56" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
+<span id="cb38-57"><a href="#cb38-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-58"><a href="#cb38-58" aria-hidden="true" tabindex="-1"></a><span class="co">## run Salmon</span></span>
+<span id="cb38-59"><a href="#cb38-59" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 <span class="st">"salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"</span></span>
+<span id="cb38-60"><a href="#cb38-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-61"><a href="#cb38-61" aria-hidden="true" tabindex="-1"></a><span class="co">## Final report</span></span>
+<span id="cb38-62"><a href="#cb38-62" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> .</span>
 <span id="cb38-63"><a href="#cb38-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-64"><a href="#cb38-64" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> trim_galore/<span class="pp">*</span>trim<span class="pp">*</span>fq.gz <span class="co">#Remove trimmed fastq temporary files</span></span>
-<span id="cb38-65"><a href="#cb38-65" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> STAR/<span class="pp">*</span>.wig <span class="co">#Remove wig files once converted to bigWig</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb38-64"><a href="#cb38-64" aria-hidden="true" tabindex="-1"></a><span class="co">## Tidy up</span></span>
+<span id="cb38-65"><a href="#cb38-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-66"><a href="#cb38-66" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> trim_galore/<span class="pp">*</span>trim<span class="pp">*</span>fq.gz <span class="co">#Remove trimmed fastq temporary files</span></span>
+<span id="cb38-67"><a href="#cb38-67" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> STAR/<span class="pp">*</span>.wig <span class="co">#Remove wig files once converted to bigWig</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>With this script we can now run everything from start to end in one go:</p>
 <div class="sourceCode" id="cb39"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> RNA-seq_workshop_tmp <span class="co">#Create a temporary directory</span></span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span>  RNA-seq_workshop_tmp <span class="co">#Move into that directory</span></span>
