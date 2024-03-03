@@ -36,9 +36,11 @@ We recommend that you understand the basics of R and RStudio and follow at least
 
 ### Installing DESeq2
 
-DESeq2 is part of the Bioconductor repository of biology specific R packages. You can install DESeq2 using the Bioconductor manager with the code below in the R Console. We will also use several other R libraries.
+DESeq2 is part of the Bioconductor repository of biology specific R packages. You can install DESeq2 using the Bioconductor manager with the code below in the R Console. These should already be installed in RStudio on the aabn server so you will not need to run this.
 
 ```{r,eval=F,warning=F,message=F}
+### YOU DO NOT NEED TO RUN THIS CODE!!
+
 ## Install Bioconductor packages
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -136,7 +138,7 @@ DESeq2 has internal methods for:
 
 -   Multiple testing correction (FDR adjusted p-value)
 
-![](images/DESeq2.png){width="300",align="center"}
+![](images/DESeq2.png)
 
 ### Comprehensive tutorials
 
@@ -330,15 +332,19 @@ You can read more on DESeq2 data transformations [here](http://bioconductor.org/
 
 ### Heatmap of Sample Distances
 
-We can use our transformed data to perform sample clustering. Here, we calculate sample *distances* with the `dist()` function applied to the transpose of the transformed count matrix. A heatmap of this distance matrix gives us an overview of similarities and dissimilarities between samples.
+We can use our log transformed data to perform sample clustering. Here, we calculate sample *distances* by applying the `dist()` function to our transformed read count matrix.
 
-We have to provide a hierarchical clustering `hc` to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.
+By default, the `dist()` function calculates euclidean distances between the rows of a matirx. We have to transpose our read count table first to calculate distances between samples (columns). The distance calculated is a measure of the distance between two vectors, in this case the read counts for all genes:
+
+    # euclidean(a,b) = sqrt(sum((a - b)^2))
+
+A heatmap of this distance matrix gives us an overview of similarities and dissimilarities between samples.
 
 ```{r}
 library("pheatmap") #  heatmap plotting package
 library("RColorBrewer") # colour scales
 
-sampleDists <- dist(t(assay(rld)))
+sampleDists <- dist(t(assay(rld))) ## t() function transposes a matrix
 sampleDistMatrix <- as.matrix(sampleDists)
 rownames(sampleDistMatrix) <- as.list(cnames)
 colnames(sampleDistMatrix) <- as.list(cnames)
@@ -387,6 +393,7 @@ It may also be useful to take an initial look at the genes with the highest amou
 ```{r}
 ## Get the top 20 genes after ordering the rld counts by variance
 topVarGenes <- head(order(-rowVars(assay(rld),useNames = T)),20)
+
 ## Create a matrix from these genes only
 mat <- assay(rld)[topVarGenes, ] 
 anno<-as.data.frame(colData(dds)[,labels])
@@ -601,7 +608,7 @@ ggplot(result_list_anno[[1]],aes(log2FoldChange,-log10(padj),colour=threshold)) 
   geom_text_repel(data=topFive,aes(label = gene_name))+
   theme_bw() + 
   ggtitle(coefficients[1])  +
-  theme(legend.key = element_blank())
+  guides(colour=F)
 ```
 
 ### Plots of DE genes by biotype
@@ -628,17 +635,19 @@ ggplot(sig_genes,aes("Significant genes",fill=gene_biotype)) +
 Now that we have our results, we can use the log normalised counts we created earlier to plot heatmaps of genes with the largest changes.
 
 ```{r}
+## Out of all significant genes, get the 20 with the largest fold change in either direction in MOV10_OE relative to the control
 ## Out of all significant genes, get the 50 with the largest fold change in either direction in MOV10_OE relative to the control
-top50<-result_list_anno[[1]] %>% 
+top20<-result_list_anno[[1]] %>% 
   dplyr::filter(threshold=="Significant") %>% 
-  arrange(abs(log2FoldChange)) %>% 
-  head(n=50) %>% 
+  arrange(desc(abs(log2FoldChange))) %>% 
+  head(n=20) %>% 
   pull(geneID)
 
 ## Create a matrix of rld counts and plot the heatmap
-mat<-assay(rld)[top50,]
+mat<-assay(rld)[top20,]
 colors <- colorRampPalette( rev(brewer.pal(9, "RdBu")) )(255)
 pheatmap(mat,color=colors,scale = "row",cluster_rows = T,cluster_cols = T,annotation_col = anno)
+
 ```
 
 ::: key-points
