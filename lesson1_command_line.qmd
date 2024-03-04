@@ -45,7 +45,7 @@ Once you have typed in your password, you should see some text and a prompt that
 
 ### RStudio
 
-We will use RStudio in the second part of this workshop to analyses read count data. RStudio can also be used to view the files we create on the server in a genome browser. Check that you can login at [http://aabn.ug.edu.gh/auth-sign-in](https://eur02.safelinks.protection.outlook.com/?url=http%3A%2F%2Faabn.ug.edu.gh%2Fauth-sign-in&data=05%7C02%7C%7C308be624c262423dbeb408dc256eb9c4%7C2e9f06b016694589878910a06934dc61%7C0%7C0%7C638426405753131265%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=SmKwPGIJq35pVVqzWUFEkDYwQ6XtvRqjaGUQEXflpwA%3D&reserved=0 "Original URL: http://aabn.ug.edu.gh/auth-sign-in. Click or tap if you trust this link.")
+We will use RStudio in the second part of this workshop to analyse read count data. RStudio can also be used to view the files we create on the server in a genome browser. Check that you can login at [http://aabn.ug.edu.gh/auth-sign-in](https://eur02.safelinks.protection.outlook.com/?url=http%3A%2F%2Faabn.ug.edu.gh%2Fauth-sign-in&data=05%7C02%7C%7C308be624c262423dbeb408dc256eb9c4%7C2e9f06b016694589878910a06934dc61%7C0%7C0%7C638426405753131265%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=SmKwPGIJq35pVVqzWUFEkDYwQ6XtvRqjaGUQEXflpwA%3D&reserved=0 "Original URL: http://aabn.ug.edu.gh/auth-sign-in. Click or tap if you trust this link.")
 
 ### Integrative Genomics Viewer
 
@@ -216,104 +216,7 @@ If we look at the *adapter content* and *over represented sequences* sections we
 
 <br>
 
-## 4. Shell scripts, pipelining and parallelisation
-
-Up until now we have run command line tools on each one of our datasets in serial, this means they run one after the other. In this tutorial we only have a few small datasets and the tools run relatively quickly, but this approach won't scale well to multiple large datasets. A more efficient approach is to create a **script** that will run all of our datasets in **parallel**.
-
-### parallel
-
-Unix has a program called **parallel** which allows you to run tools on multiple datasets at the same time. The following command lists all of your gzipped fastq files and pipes "\|" them into parallel.
-
-``` bash
-ls fastq/*fq.gz | parallel -j 6 fastqc {} &
-ps f
-```
-
--   *ls* lists files ending with .fq.gz in your fastq directory and pipes the names into the parallel command.
--   The parallel *-j* flag stands for *jobs* and tells parallel to run 6 processes at the same time.
--   In this case we are running fastqc and the *{}* is a place holder for the filenames we are piping in.
--   The *&* character runs these jobs in the background so we can continue to use the terminal.
--   *ps* is the *process status* tool which shows jobs running in the current session, we should see 6 instances of fastqc running.
-
-This will rerun the fastqc jobs and should be much quicker.
-
-### Shell scripts
-
-Putting all of your commands into a script is good practice for keeping track of your analysis and for reproducibility. We want to write scripts so they can be used again on different datasets and avoid *hardcoding* the names of files.
-
-First, let's create a file that lists our sample names so we can feed this into our pipeline. We could just type this manually or use a spreadsheet and export it as a tab-separated file. We will use a bit of unix text processing, don't worry too much if you don't understand the command. For this exercise we will only use one of the replicates.
-
-``` bash
-ls fastq/*_1.fq.gz | parallel basename | sed s/.fq.gz// > samples.txt
-```
-
-Here, the fastq file names are 'piped' into parallel as above but we use a regular expression within `sed` to remove the file name suffix. The output file `samples.txt` now contains a list of our sample names. Take a look at the file with the `less` command. You can type `q` to exit.
-
-``` bash
-less samples.txt
-```
-
-Now let's create our pipeline script. We'll start by creating and opening a new file called **pipeline.sh**. The .sh stands for shell which is essentially just a name for the command line environment.
-
-``` bash
-emacs pipeline.sh
-```
-
-**Emacs** is a Unix text editor. Here we are going to paste all of the commands we have used so far:
-
-    ## PREPARATION
-
-    ## Create a folder for fastq files
-    mkdir fastq
-    ## Link the raw data to the fastq folder
-    ls /data/swebb/training/RNA-seq_analysis/lesson_1/fastq/*fq.gz | parallel -j 6 ln -s {} fastq/
-    ## Link the annotation folder
-    ln -s /data/swebb/training/RNA-seq_analysis/annotation .
-    ## Create sample file
-    ls fastq/*_1.fq.gz | parallel basename | sed s/.fq.gz// > samples.txt
-
-
-    ## QC
-
-    ## FastQC
-    fastqc fastq/*.fq.gz
-
-    ##Multi QC
-    multiqc -o fastq fastq
-
-    ## PREPROCESSING 
-
-The **\#** symbol indicates a comment line and anything preceded by a \# will not be run by the command line. It is good practice to comment your code.
-
-::: challenge
-<h2><i class="fas fa-pencil-alt"></i> Challenge:</h2>
-
-See if you can adapt the QC portion of the script to use parallel.
-
-**Hint:** `cat samples.txt` will print the names of all of the samples.
-
-<details>
-
-<summary>Solution</summary>
-
-::: solution
-<h2><i class="far fa-eye"></i></h2>
-
-``` bash
-cat samples.txt | parallel -j 2 "fastqc fastq/{}.fq.gz"
-```
-:::
-
-</details>
-:::
-
-To save and exit the file press **ctrl-x**, followed by **ctrl-c** and then **y** to save.
-
-Let's move on with our RNA-seq analysis. Every time we run a tool that creates new output we should add it to our pipeline.sh file. These code blocks will be highlighted in blue. We will learn how to run this script and the full analysis in one go later on.
-
-Although shell scripts save all of your commands they do not necessarily track the versions of software that you use or the current state of your environment and other tool dependencies. They are also unaware of the workflow of your data. More advanced methods of pipelining and containerisation are recommended for fully reproducible analyses using workflow systems such as **NextFlow** or **Snakemake**.
-
-## 5. Quality trimming and adapter removal
+## 4. Quality trimming and adapter removal
 
 From the FastQC report we can see that the overall quality of our sequencing is good, however it is good practice to perform some pre-processing and filtering of reads. Poor quality sequencing can make a read less alignable, so it is good practice to **quality trim** the ends of reads until we get to the high quality portion. Trimming is not always necessary as some mapping programs will trim the reads for you or perform **soft clipping** where only part of a read is required to align, but studies have shown that pre-processing generally improves alignment rate if done correctly.
 
@@ -336,19 +239,23 @@ Cutadapt can perform quality trimming, adapter removal and read filtering as wel
 -   cores : Use multiple CPU cores to speed up the computation
 -   o : the name of the output folder
 
-::: blue
+From here onwards, we are just going to look at one control and one MOV10OE sample, to save time
+
 ``` bash
 ## Run this code then add it to your pipeline.sh file!
 mkdir trim_galore ## Create a new folder for trimmed data
-cat samples.txt | parallel -j 2 "trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"
+
+trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/Control_1.fq.gz
+
+trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/MOV10_OE_1.fq.gz
 ```
-:::
 
 To view a trim_galore report:
 
 ``` bash
-less trim_galore/Control_1.fq.gz_trimming_report.txt
 ```
+
+less trim_galore/Control_1.fq.gz_trimming_report.txt
 
 ::: discussion
 <h2><i class="far fa-bell"></i> Discussion</h2>
@@ -361,13 +268,9 @@ less trim_galore/Control_1.fq.gz_trimming_report.txt
 
 Let's compare the fastqc reports. Run **multiqc** on the trimmed data and compare this with the reports for the raw data.
 
-::: blue
 ``` bash
 multiqc -f -o trim_galore trim_galore
 ```
-:::
-
-Remember to add the trim_galore and multiqc steps to your **pipeline.sh** file.
 
 ### Other trimming software worth investigating
 
@@ -394,7 +297,7 @@ It may be worth looking into a few other tools for quality control of RNA-seq da
 
 <br>
 
-## 6. Read Alignment
+## 5. Read Alignment
 
 There are many tools available for mapping reads to genomes and transcriptomes, each with their own purposes and strengths. RNA-seq data requires a *splice-aware* aligner that can handle splice junctions in the sequencing reads. The two most popular aligners are [STAR](https://github.com/alexdobin/STAR), which is very fast, and [HISAT2](http://daehwankimlab.github.io/hisat2/manual/), which is very accurate.
 
@@ -424,12 +327,13 @@ The code below shows how these were generated with STAR. You do not need to run 
 
 Now that we have an index, we can align our reads to the human genome with STAR. Because STAR uses a large amount of memory, we are only going to map reads to chr1 for this workshop, however we will look at the complete mapping as a group.
 
-::: blue
 ``` bash
 mkdir STAR ## make a new folder for read alignments
-cat samples.txt | parallel -j 2 "STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"
+
+STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/Control_1_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/Control_1. --outWigType wiggle --outWigNorm RPM --genomeLoad LoadAndRemove --limitBAMsortRAM 30000000000
+
+STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/MOV10_OE_1_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/MOV10_OE_1.  --outWigType wiggle --outWigNorm RPM --genomeLoad LoadAndRemove --limitBAMsortRAM 30000000000
 ```
-:::
 
 We are using the following parameters:
 
@@ -483,6 +387,8 @@ The second column is the **SAM flag** and contains coded information about each 
 Use the [Explain SAM flags](https://broadinstitute.github.io/picard/explain-flags.html) resource to find out more about the alignments in your file. They appear to contain the flags 0,16,256 and 272.
 :::
 
+<br>
+
 We can also see the sam file *header* using the -H flag which contains information on the parameters and indexes used to create the file.
 
 ``` bash
@@ -491,11 +397,11 @@ samtools view -H STAR/Control_1.Aligned.sortedByCoord.out.bam | less
 
 We can index our bam files with `samtools index`. This creates an index file for quick programmatic access to the binary file. Indexing is required for some of the samtools programs to work as well as for viewing the reads on genome browsers.
 
-::: blue
 ``` bash
-cat samples.txt | parallel -j 2 "samtools index STAR/{}.Aligned.sortedByCoord.out.bam" ## Index the bam files
+## Index the bam files
+samtools index STAR/Control_1.Aligned.sortedByCoord.out.bam
+samtools index STAR/MOV10_OE_1.Aligned.sortedByCoord.out.bam
 ```
-:::
 
 The command `samtools idxstats` outputs the number of reads aligned to each sequence in our reference.
 
@@ -524,7 +430,7 @@ The third column represents the number of alignments.
 
 <br>
 
-## 7. Post alignment processing
+## 6. Post alignment processing
 
 Now that we have aligned our reads we may want to do some filtering before any downstream analysis. Make sure you are aware of the alignments that are reported by your mapping program and the parameters used. For instance, are unmapped reads included in the BAM file? Are all alignments to repeats reported or just one? Are paired-end alignments still reported if only one end maps?
 
@@ -540,11 +446,15 @@ Flagstat seems to report more alignments than the number of reads shown in our S
 
 We can use `samtools view -f` to include, and `-F` to exclude reads with a given SAM flag. The flag 260 is the sum of 4 (read is unmapped) and 256 (not primary alignment). This will filter unmapped reads and non-primary alignments to give us a single alignment for each mapped read.
 
-::: blue
 ``` bash
-cat samples.txt | parallel -j 2 "samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"
+## Filter out secondary alignments and index bam files
+
+samtools view -F 260 -bh -o  STAR/Control_1.primary.bam STAR/Control_1.Aligned.sortedByCoord.out.bam
+samtools index STAR/Control_1.primary.bam
+
+samtools view -F 260 -bh -o  STAR/MOV10_OE_1.primary.bam STAR/MOV10_OE_1.Aligned.sortedByCoord.out.bam
+samtools index STAR/MOV10_OE_1.primary.bam
 ```
-:::
 
 The `-bh` option tells samtools view to output in BAM format and to include the header.
 
@@ -571,11 +481,15 @@ Alignment tools assign a **mapping quality** to each read (column 5 in BAM) betw
 
 You should be aware that [mapping qualities differ between mapping tools](https://sequencing.qcfail.com/articles/mapq-values-are-really-useful-but-their-implementation-is-a-mess/). STAR uses mapping quality scores of 0 and 255 to represent multimap and unique reads respectively. Filtering out reads with a mapping quality \< 255 means that all remaining reads align to a single unique position. We can use `samtools view -q` to filter based on mapping quality.
 
-::: blue
 ``` bash
-cat samples.txt | parallel -j 2 "samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"
+## Filter for unique reads and index
+
+samtools view -b -q 255 STAR/Control_1.primary.bam -o STAR/Control_1.unique.bam
+samtools index STAR/Control_1.unique.bam
+
+samtools view -b -q 255 STAR/MOV10_OE_1.primary.bam -o STAR/MOV10_OE_1.unique.bam
+samtools index STAR/MOV10_OE_1.unique.bam
 ```
-:::
 
 **Duplicate reads** are often observed as tall spikes in your read depth profile where reads are stacked directly on top of each other. A high level of duplication in your library may be due to over amplification by PCR or contamination. In RNA-seq experiments the chances of selecting identical sequences are much higher as our sample size is much smaller (length of transcriptome vs length of genome) and multiple copies of the same sequence (transcripts) exist independently. Thus, it is common practice to retain duplicate reads.
 
@@ -611,7 +525,7 @@ In some cases you may wish to remove reads that align to specific regions of the
 
 ------------------------------------------------------------------------
 
-## 8. Visualising alignments on a genome browser
+## 7. Visualising alignments on a genome browser
 
 It is always a good idea to visually inspect your data on a genome browser. Has the sequencing worked as expected? Are there noticeable differences between samples by eye? Do RNA-seq reads align to the expected strand?
 
@@ -629,12 +543,21 @@ head STAR/Control_1.Signal.Unique.str1.out.wig
 
 Let's convert the **unique** files to bigWig format for visualisation. The tool **wigToBigWig** requires three arguments, an input file, a file of chromosome lengths, and the name of the output file.
 
-::: blue
 ``` bash
 mkdir visualisation ## Create a folder for visualisation files
-cat samples.txt | parallel -j 2 "wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"
+
+## Make bigWig files for forward strand - Control
+wigToBigWig STAR/Control_1.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/Control_1.unique.r.bw
+
+## Make bigWig files for reverse strand - Control
+wigToBigWig STAR/Control_1.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/Control_1.unique.f.bw
+
+## Make bigWig files for forward strand - MOV10_OE
+wigToBigWig STAR/MOV10_OE_1.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/MOV10_OE_1.unique.r.bw
+
+## Make bigWig files for reverse strand - MOV10_OE
+wigToBigWig STAR/MOV10_OE_1.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/MOV10_OE_1.unique.f.bw
 ```
-:::
 
 ------------------------------------------------------------------------
 
@@ -677,13 +600,11 @@ More on RNA-seq normalisation:
 
 Let's also add our bam files to the visualisation folder.
 
-::: blue
 ``` bash
 cd visualisation
 ln -s ../STAR/*unique.bam* .
 cd ../
 ```
-:::
 
 It is best to download the [desktop app](https://www.broadinstitute.org/igv/) for use on your own machine but if you can also access the web app at <https://igv.org/app/>.
 
@@ -770,7 +691,7 @@ We recommend IGV as it allows you to quickly explore your data. Several other ge
 
 <br>
 
-## 9. Quantifying expression levels
+## 8. Quantifying expression levels
 
 Once we have inspected our data and are happy with our alignments, we can quantify expression levels for annotated transcripts. Pseudo-alignment tools, such as [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html), map sequencing reads directly to transcripts. They are extremely fast, can handle multi-map reads, and take into account multiple isoforms, transcript lengths and sequencing biases when estimating abundance.
 
@@ -806,7 +727,7 @@ Like STAR, Salmon requires an index for alignment. The indexes require fasta seq
 ::: resources
 <h2><i class="fas fa-book"></i> Further Learning</h2>
 
-Creating Salmon indexes is more complicated than STAR but the bioinformatics team can help you out if you need to do this. Several pre-computed indexes exist in /homes/genomes. You can also read more about the method [here](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment).
+Creating Salmon indexes is more complicated than STAR but the bioinformatics team may be able to help you out or there may be pre-computed indexes available. You can also read more about the method [here](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment).
 :::
 
 ### Pseudo-alignment with Salmon
@@ -823,7 +744,11 @@ We can now run Salmon to estimate expression levels of transcripts. Biases in se
 ::: blue
 ``` bash
 mkdir salmon ## Make a folder for salmon output
-cat samples.txt | parallel -j 2 "salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"
+
+## Quantify expression with salmon
+salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/Control_1_trimmed.fq.gz -p 1 --seqBias --gcBias -o salmon/Control_1
+
+salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/MOV10_OE_1_trimmed.fq.gz -p 1 --seqBias --gcBias -o salmon/MOV10_OE_1
 ```
 :::
 
@@ -862,10 +787,6 @@ The sequence composition of a transcript affects how many reads are sampled from
 
 <br>
 
-## 10. Finish your script
-
-We now have our alignments (BAM), visualisation files (bigWig) and transcript quantification (quant.sf) and this is normally a branching point for downstream analyses.
-
 ### Final reports
 
 The last thing we want to do is to run **MultiQC** on our folder to compile the reports from Trim_galore, STAR and Salmon:
@@ -886,7 +807,6 @@ Take a look at the multiqc report in your public folder:
 -   Why are there two different values for % Aligned in the general statistics?
 -   Are you happy with the % of aligned reads?
 -   Why does the MOV10 sample have more duplicate reads?
--   Look at the 'Per Base Sequence Content' plot. What's going on at the 3' end?
 :::
 
 ### Tidy Up!
@@ -900,104 +820,133 @@ rm trim_galore/*trim*fq.gz #Remove trimmed fastq temporary files
 rm STAR/*.wig #Remove wig files once converted to bigWig
 ```
 
-### Running your complete script
+## 9. Shell scripts, pipelining and parallelisation
 
-Your pipeline.sh script should look something like this (don't run this code again!):
+Up until now we have run command line tools on each one of our datasets in serial, this means they run one after the other. In this tutorial we only have a few small datasets and the tools run relatively quickly, but this approach won't scale well to multiple large datasets.
+
+We also have to manually input each command and wait for each job to finish, which can be time consuming.
+
+A more efficient approach is to create a **script** that will run all of our datasets in **parallel**.
+
+### Bash script
+
+Below is an example of a bash script which runs all of the steps of our analysis.
 
 ``` bash
 ## PREPARATION
 
-## Create a web directory to view output                         
-ln -s $PWD ~/public_html/
-## Create a folder for fastq files
+## Create folders
 mkdir fastq
-## Link the raw data to the fastq folder
-ls /library/training/RNA-seq_analysis/data/lesson_1/fastq/*fq.gz | parallel -j 2 ln -s {} fastq/
+mkdir trim_galore
+mkdir STAR 
+mkdir salmon
+mkdir visualisation
+
 ## Link the annotation folder
-ln -s /library/training/RNA-seq_analysis/annotation .
-## Create sample file
-ls fastq/*_1.fq.gz | parallel basename | sed s/.fq.gz// > samples.txt
+ln -s /data/swebb/training/RNA-seq_analysis/annotation .
+
+## Link the raw data to the fastq folder
+ln -s /data/swebb/training/RNA-seq_analysis/lesson_1/fastq/$1.fq.gz fastq/
 
 ## QC
 
 ## FastQC
-cat samples.txt | parallel -j 2 "fastqc fastq/{}.fq.gz"
-
-##Multi QC
-multiqc -o fastq fastq
+fastqc fastq/$1.fq.gz
 
 ## PREPROCESSING 
-
-mkdir trim_galore ## Create a new folder for trimmed data
-cat samples.txt | parallel -j 2 "trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/{}.fq.gz"
-
-multiqc -f -o trim_galore trim_galore
-
-## ALIGNMENT
-mkdir STAR ## make a new folder for read alignments
+trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/$1.fq.gz
 
 ## run STAR
-cat samples.txt | parallel -j 2 "STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/{}_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/{}. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000"
+STAR --genomeDir /data/swebb/training/RNA-seq_analysis/annotation_small/STAR_index_hg38_chr1.ensembl106 --readFilesCommand zcat --readFilesIn trim_galore/$1_trimmed.fq.gz --runThreadN 2 --outSAMtype BAM SortedByCoordinate --outFileNamePrefix STAR/$1. --sjdbGTFfile annotation/Homo_sapiens.GRCh38.106.gtf --outWigType wiggle --outWigNorm RPM --genomeLoadLoadAndRemove --limitBAMsortRAM 30000000000
 
 ## index STAR
-cat samples.txt | parallel -j 2 "samtools index STAR/{}.Aligned.sortedByCoord.out.bam"
+samtools index STAR/$1.Aligned.sortedByCoord.out.bam
 
 ## filter for primary reads
-cat samples.txt | parallel -j 2 "samtools view -F 260 -bh -o  STAR/{}.primary.bam STAR/{}.Aligned.sortedByCoord.out.bam; samtools index STAR/{}.primary.bam"
+samtools view -F 260 -bh -o  STAR/$1.primary.bam STAR/$1.Aligned.sortedByCoord.out.bam
+samtools index STAR/$1.primary.bam
 
 ## filter for unique reads
-cat samples.txt | parallel -j 2 "samtools view -b -q 255 STAR/{}.primary.bam -o STAR/{}.unique.bam; samtools index STAR/{}.unique.bam"
-
-## Visualisation
-mkdir visualisation
+samtools view -b -q 255 STAR/$1.primary.bam -o STAR/$1.unique.bam; samtools index STAR/$1.unique.bam
 
 ## Convert wig to bigWig for both strands
-cat samples.txt | parallel -j 2 "wigToBigWig STAR/{}.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.r.bw; wigToBigWig STAR/{}.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/{}.unique.f.bw"
+wigToBigWig STAR/$1.Signal.Unique.str1.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/$1.unique.r.bw
+wigToBigWig STAR/$1.Signal.Unique.str2.out.wig annotation/Homo_sapiens.GRCh38.dna.primary_assembly.len visualisation/$1.unique.f.bw
 
 ## link bigWigs to visualisation folder
 cd visualisation
-ln -s ../STAR/*unique.bam* .
+ln -s ../STAR/$1*unique.bam* .
 cd ../
 
-## Transcript abundance
-mkdir salmon ## Make a folder for salmon output
-
 ## run Salmon
-cat samples.txt | parallel -j 2 "salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/{}_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/{}"
-
-## Final report
-multiqc -f .
+salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/$1_trimmed.fq.gz -p 5 --seqBias --gcBias -o salmon/$1
 
 ## Tidy up
 
-rm trim_galore/*trim*fq.gz #Remove trimmed fastq temporary files
-rm STAR/*.wig #Remove wig files once converted to bigWig
+rm trim_galore/$1*trim*fq.gz #Remove trimmed fastq temporary files
+rm STAR/$1*.wig #Remove wig files once converted to bigWig
+
+##Multi QC on everything
+multiqc -f .
 ```
 
-With this script we can now run everything from start to end in one go:
+You will notice that the sample names have been replaced with `$1`. This is a bash programming device that recognises the first argument supplied to a script.
+
+Let's make a new folder and copy this script into it:
 
 ``` bash
-mkdir RNA-seq_workshop_tmp #Create a temporary directory
-cd  RNA-seq_workshop_tmp #Move into that directory
-cp ../pipeline.sh ../samples.txt . #Copy the pipeline and samples file into the new directory
-bash pipeline.sh & #Run the shell script (See Below)
-cd .. #Move back to the main directory
+cd
+mkdir RNA-seq_workshop_auto
+cd RNA-seq_workshop_auto
+cp /data/swebb/training/RNA-seq_analysis/lesson_1/RNA-seq_pipeline.sh .
 ```
 
-We use the unix tool `bash` and the name of our script to run our commands through the shell. We use the `&` to run everything in the background to continue using the terminal.
-
-You can keep track of your pipeline by using `ps`.
+We can now run this script with one of our samples by supplying the sample name as an argument:
 
 ``` bash
-ps f
+sh RNA-seq_pipeline.sh Control_1
 ```
 
-This will take several minutes to run so it's best to set it running then take a bit of a break. When the pipeline completes take a look and make sure all of the output has been created.
+When the script completes you can use the `tree` command to see all of your outputs.
+
+We could then run the pipeline again using MOV10_OE_1, but it would also be nice if we could run both samples at the same time. Thankfully, Unix has a command called `parallel` which allows us to do this.
+
+### parallel
+
+**parallel** allows you to run tools on multiple datasets at the same time. The following example lists all of your gzipped fastq files and pipes "\|" them into parallel.
+
+``` bash
+## EXAMPLE DO NOT URN
+ls fastq/*fq.gz | parallel -j 6 fastqc {} &
+```
+
+-   *ls* lists files ending with .fq.gz in your fastq directory and pipes the names into the parallel command.
+-   The parallel *-j* flag stands for *jobs* and tells parallel to run 6 processes at the same time.
+-   In this case we are running fastqc and the *{}* is a place holder for the filenames we are piping in.
+-   The *&* character runs these jobs in the background so we can continue to use the terminal.
+
+We can also use parallel to run our script. First, copy the samples.txt file which contains the names of the samples we want to run:
+
+``` bash
+## Copy the samples file
+cp /data/swebb/training/RNA-seq_analysis/lesson_1/samples.txt .
+## Print the samples file
+cat samples.txt
+```
+
+Now let's pipe the names of our samples into parallel:
+
+``` bash
+cat samples.txt | parallel -j 2 sh RNA-seq_pipeline.sh {}
+```
+
+This will take a while to run, but once complete you can use the `tree` command again to see the output files.
+
+We now have our alignments (BAM), visualisation files (bigWig) and transcript quantification (quant.sf) and this is normally a branching point for downstream analyses.
 
 ::: key-points
 <h2><i class="fas fa-thumbtack"></i> Key points:</h2>
 
--   Generate report files for your entire analysis with **MultiQC**
 -   Save your analysis as a script and run it in one go
 -   Learn to manage your data
 :::
