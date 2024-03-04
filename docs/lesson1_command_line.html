@@ -416,9 +416,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="fastq-screen" class="level3">
 <h3 class="anchored" data-anchor-id="fastq-screen">FastQ screen</h3>
 <p>It is useful to know if your sequencing library contains the types of sequences you expect. <a href="http://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/">FastQ Screen</a> is a program which searches for contaminants by mapping a sample of your reads to different genomes. It allows you to specify a custom set of genomes, e.g.&nbsp;all of the organisms you work on, along with PhiX, vectors and other contaminants commonly seen in sequencing experiments. We will not run this in the workshop but an example is given below.</p>
+<div class="blue">
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example, do not run</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">fastq_screen</span> fastq/<span class="pp">*</span>fq.gz <span class="at">--outdir</span> fastq </span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># * is a wild card character so includes all files that end fq.gz</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>The output shows that most of the reads align to the human genome and that no reads align uniquely to other organisms:</p>
 <p><img src="images/fastq_screen.png" class="img-fluid" width="1200"></p>
 </section>
@@ -470,15 +472,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>o : the name of the output folder</li>
 </ul>
 <p>From here onwards, we are just going to look at one control and one MOV10OE sample, to save time</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Run this code then add it to your pipeline.sh file!</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> trim_galore <span class="co">## Create a new folder for trimmed data</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Create a new folder for trimmed data</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> trim_galore </span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ex">trim_galore</span> <span class="at">--fastqc</span> <span class="at">-q</span> 20 <span class="at">--illumina</span> <span class="at">--length</span> 20 <span class="at">--cores</span> 4 <span class="at">-o</span> trim_galore fastq/Control_1.fq.gz</span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">trim_galore</span> <span class="at">--fastqc</span> <span class="at">-q</span> 20 <span class="at">--illumina</span> <span class="at">--length</span> 20 <span class="at">--cores</span> 4 <span class="at">-o</span> trim_galore fastq/MOV10_OE_1.fq.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>To view a trim_galore report:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>less trim_galore/Control_1.fq.gz_trimming_report.txt</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> trim_galore/Control_1.fq.gz_trimming_report.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="discussion">
 <h2 class="anchored" data-anchor-id="trim-galore">
 <i class="far fa-bell"></i> Discussion
@@ -530,6 +531,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>First, we need to select a reference genome to align to. Every time a reference genome is released or updated it is given a new name, often referred to as the genome build or assembly (..hg18, hg19, hg38). It is important to realise that different builds of the same genome are different sequences and thus their co-ordinate systems are incomparable. For instance position 10000000 on chr1 is T in hg19 and G in hg38.</p>
 <p>We are going to map our reads to a recent release of the human genome (<strong>hg38</strong> or <strong>GRCh38</strong>). We need to create an index file from the GRCh38 fasta sequence so that STAR can quickly access the reference sequences. Many of these indexes are pre-computed on our servers and stored under the /homes/genomes directory for everyone to use. The indexes for this workshop have are available in the annotation we linked earlier.</p>
 <p>The code below shows how these were generated with STAR. You do not need to run this again, it will take a long time to run!!!</p>
+<div class="blue">
 <div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Download sequence files and latest annotations from Ensembl</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#wget http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz  ## Use primary assembly without Alt contigs but including scaffolds</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#wget http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz</span></span>
@@ -539,6 +541,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">## Build STAR index</span></span>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#STAR --runMode genomeGenerate --genomeDir STAR_index_hg38.ensembl106 --genomeFastaFiles Homo_sapiens.GRCh38.dna.primary_assembly.fa --sjdbGTFfile Homo_sapiens.GRCh38.106.gtf --sjdbOverhang 100 --runThreadN 20</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 <section id="mapping-reads-with-star" class="level3">
 <h3 class="anchored">Mapping reads with STAR</h3>
@@ -838,6 +841,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="create-a-salmon-index" class="level3">
 <h3 class="anchored">Create a Salmon index</h3>
 <p>Like STAR, Salmon requires an index for alignment. The indexes require fasta sequences of all coding and non-coding RNAs as well as the genomic sequence. The Salmon index for this workshop has been pre-computed using the code below. You do not need to run this as it will already be in the annotation folder you linked previously.</p>
+<div class="blue">
 <div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Download cdna and ncrna fasta files from Ensembl</span></span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co">#wget http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz</span></span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co">#wget http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/ncrna/Homo_sapiens.GRCh38.ncrna.fa.gz</span></span>
@@ -860,6 +864,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="co">## Build Salmon index</span></span>
 <span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="co">#salmon index -t Homo_sapiens.GRCh38.cdna.ncrna.gentrome.fa.gz -d decoys.txt -p 24 -i hg38.cdna.ncrna.salmon.index -k 31</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <div class="resources">
 <h2 class="anchored" data-anchor-id="create-a-salmon-index">
 <i class="fas fa-book"></i> Further Learning
@@ -878,15 +883,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>gcBias : correct GC bias in the data</li>
 <li>o : name of the output folder</li>
 </ul>
+<div class="blue">
 <div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co">## Quantify expression with salmon</span></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> quant <span class="at">-i</span> annotation/hg38.cdna.ncrna.salmon.index <span class="at">-l</span> SR <span class="at">-r</span> trim_galore/Control_1_trimmed.fq.gz <span class="at">-p</span> 1 <span class="at">--seqBias</span> <span class="at">--gcBias</span> <span class="at">-o</span> salmon/Control_1</span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> quant <span class="at">-i</span> annotation/hg38.cdna.ncrna.salmon.index <span class="at">-l</span> SR <span class="at">-r</span> trim_galore/MOV10_OE_1_trimmed.fq.gz <span class="at">-p</span> 1 <span class="at">--seqBias</span> <span class="at">--gcBias</span> <span class="at">-o</span> salmon/MOV10_OE_1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>The <strong>library type</strong> describes the type of reads used in the experiment. Here we have single (S), reverse-stranded (R) reads. Check the documentation for other arguments.</p>
 <p>The main output of Salmon is a <em>quant.sf</em> file, take a look at one of these files:</p>
+<div class="blue">
 <div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> salmon/Control_1/quant.sf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>For each transcript we have five columns:</p>
 <ul>
 <li>The transcript identifier</li>
@@ -946,6 +955,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="bash-script" class="level3">
 <h3 class="anchored" data-anchor-id="bash-script">Bash script</h3>
 <p>Below is an example of a bash script which runs all of the steps of our analysis.</p>
+<div class="blue">
 <div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co">## PREPARATION</span></span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="co">## Create folders</span></span>
@@ -1001,22 +1011,29 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb32-53"><a href="#cb32-53" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb32-54"><a href="#cb32-54" aria-hidden="true" tabindex="-1"></a><span class="co">##Multi QC on everything</span></span>
 <span id="cb32-55"><a href="#cb32-55" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>You will notice that the sample names have been replaced with <code>$1</code>. This is a bash programming device that recognises the first argument supplied to a script.</p>
 <p>Let’s make a new folder and copy this script into it:</p>
+<div class="blue">
 <div class="sourceCode" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span></span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> RNA-seq_workshop_auto</span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> RNA-seq_workshop_auto</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> /data/swebb/training/RNA-seq_analysis/lesson_1/RNA-seq_pipeline.sh .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>We can now run this script with one of our samples by supplying the sample name as an argument:</p>
+<div class="blue">
 <div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sh</span> RNA-seq_pipeline.sh Control_1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>When the script completes you can use the <code>tree</code> command to see all of your outputs.</p>
 <p>We could then run the pipeline again using MOV10_OE_1, but it would also be nice if we could run both samples at the same time. Thankfully, Unix has a command called <code>parallel</code> which allows us to do this.</p>
 </section>
 <section id="parallel" class="level3">
 <h3 class="anchored">parallel</h3>
 <p><strong>parallel</strong> allows you to run tools on multiple datasets at the same time. The following example lists all of your gzipped fastq files and pipes “|” them into parallel.</p>
+<div class="blue">
 <div class="sourceCode" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">## EXAMPLE DO NOT URN</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> fastq/<span class="pp">*</span>fq.gz <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 6 fastqc {} <span class="kw">&amp;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <ul>
 <li><em>ls</em> lists files ending with .fq.gz in your fastq directory and pipes the names into the parallel command.</li>
 <li>The parallel <em>-j</em> flag stands for <em>jobs</em> and tells parallel to run 6 processes at the same time.</li>
@@ -1029,7 +1046,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co">## Print the samples file</span></span>
 <span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Now let’s pipe the names of our samples into parallel:</p>
+<div class="blue">
 <div class="sourceCode" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> samples.txt <span class="kw">|</span> <span class="ex">parallel</span> <span class="at">-j</span> 2 sh RNA-seq_pipeline.sh {}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>This will take a while to run, but once complete you can use the <code>tree</code> command again to see the output files.</p>
 <p>We now have our alignments (BAM), visualisation files (bigWig) and transcript quantification (quant.sf) and this is normally a branching point for downstream analyses.</p>
 <div class="key-points">

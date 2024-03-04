@@ -165,11 +165,13 @@ Next we want to assess the quality of our sequencing data and check for any bias
 
 It is useful to know if your sequencing library contains the types of sequences you expect. [FastQ Screen](http://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/) is a program which searches for contaminants by mapping a sample of your reads to different genomes. It allows you to specify a custom set of genomes, e.g. all of the organisms you work on, along with PhiX, vectors and other contaminants commonly seen in sequencing experiments. We will not run this in the workshop but an example is given below.
 
+::: blue
 ``` bash
 # Example, do not run
 fastq_screen fastq/*fq.gz --outdir fastq 
 # * is a wild card character so includes all files that end fq.gz
 ```
+:::
 
 The output shows that most of the reads align to the human genome and that no reads align uniquely to other organisms:
 
@@ -242,8 +244,8 @@ Cutadapt can perform quality trimming, adapter removal and read filtering as wel
 From here onwards, we are just going to look at one control and one MOV10OE sample, to save time
 
 ``` bash
-## Run this code then add it to your pipeline.sh file!
-mkdir trim_galore ## Create a new folder for trimmed data
+## Create a new folder for trimmed data
+mkdir trim_galore 
 
 trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq/Control_1.fq.gz
 
@@ -253,9 +255,8 @@ trim_galore --fastqc -q 20 --illumina --length 20 --cores 4 -o trim_galore fastq
 To view a trim_galore report:
 
 ``` bash
-```
-
 less trim_galore/Control_1.fq.gz_trimming_report.txt
+```
 
 ::: discussion
 <h2><i class="far fa-bell"></i> Discussion</h2>
@@ -311,6 +312,7 @@ We are going to map our reads to a recent release of the human genome (**hg38** 
 
 The code below shows how these were generated with STAR. You do not need to run this again, it will take a long time to run!!!
 
+::: blue
 ``` bash
 ## Download sequence files and latest annotations from Ensembl
 #wget http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz  ## Use primary assembly without Alt contigs but including scaffolds
@@ -322,6 +324,7 @@ The code below shows how these were generated with STAR. You do not need to run 
 ## Build STAR index
 #STAR --runMode genomeGenerate --genomeDir STAR_index_hg38.ensembl106 --genomeFastaFiles Homo_sapiens.GRCh38.dna.primary_assembly.fa --sjdbGTFfile Homo_sapiens.GRCh38.106.gtf --sjdbOverhang 100 --runThreadN 20
 ```
+:::
 
 ### Mapping reads with STAR
 
@@ -699,6 +702,7 @@ Once we have inspected our data and are happy with our alignments, we can quanti
 
 Like STAR, Salmon requires an index for alignment. The indexes require fasta sequences of all coding and non-coding RNAs as well as the genomic sequence. The Salmon index for this workshop has been pre-computed using the code below. You do not need to run this as it will already be in the annotation folder you linked previously.
 
+::: blue
 ``` bash
 ## Download cdna and ncrna fasta files from Ensembl
 #wget http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz
@@ -723,6 +727,7 @@ Like STAR, Salmon requires an index for alignment. The indexes require fasta seq
 ## Build Salmon index
 #salmon index -t Homo_sapiens.GRCh38.cdna.ncrna.gentrome.fa.gz -d decoys.txt -p 24 -i hg38.cdna.ncrna.salmon.index -k 31
 ```
+:::
 
 ::: resources
 <h2><i class="fas fa-book"></i> Further Learning</h2>
@@ -741,6 +746,7 @@ We can now run Salmon to estimate expression levels of transcripts. Biases in se
 -   gcBias : correct GC bias in the data
 -   o : name of the output folder
 
+::: blue
 ``` bash
 mkdir salmon ## Make a folder for salmon output
 
@@ -749,14 +755,17 @@ salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/Con
 
 salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/MOV10_OE_1_trimmed.fq.gz -p 1 --seqBias --gcBias -o salmon/MOV10_OE_1
 ```
+:::
 
 The **library type** describes the type of reads used in the experiment. Here we have single (S), reverse-stranded (R) reads. Check the documentation for other arguments.
 
 The main output of Salmon is a *quant.sf* file, take a look at one of these files:
 
+::: blue
 ``` bash
 less salmon/Control_1/quant.sf
 ```
+:::
 
 For each transcript we have five columns:
 
@@ -826,6 +835,7 @@ A more efficient approach is to create a **script** that will run all of our dat
 
 Below is an example of a bash script which runs all of the steps of our analysis.
 
+::: blue
 ``` bash
 ## PREPARATION
 
@@ -883,23 +893,28 @@ rm STAR/$1*.wig #Remove wig files once converted to bigWig
 ##Multi QC on everything
 multiqc -f .
 ```
+:::
 
 You will notice that the sample names have been replaced with `$1`. This is a bash programming device that recognises the first argument supplied to a script.
 
 Let's make a new folder and copy this script into it:
 
+::: blue
 ``` bash
 cd
 mkdir RNA-seq_workshop_auto
 cd RNA-seq_workshop_auto
 cp /data/swebb/training/RNA-seq_analysis/lesson_1/RNA-seq_pipeline.sh .
 ```
+:::
 
 We can now run this script with one of our samples by supplying the sample name as an argument:
 
+::: blue
 ``` bash
 sh RNA-seq_pipeline.sh Control_1
 ```
+:::
 
 When the script completes you can use the `tree` command to see all of your outputs.
 
@@ -909,10 +924,12 @@ We could then run the pipeline again using MOV10_OE_1, but it would also be nice
 
 **parallel** allows you to run tools on multiple datasets at the same time. The following example lists all of your gzipped fastq files and pipes "\|" them into parallel.
 
+::: blue
 ``` bash
 ## EXAMPLE DO NOT URN
 ls fastq/*fq.gz | parallel -j 6 fastqc {} &
 ```
+:::
 
 -   *ls* lists files ending with .fq.gz in your fastq directory and pipes the names into the parallel command.
 -   The parallel *-j* flag stands for *jobs* and tells parallel to run 6 processes at the same time.
@@ -930,9 +947,11 @@ cat samples.txt
 
 Now let's pipe the names of our samples into parallel:
 
+::: blue
 ``` bash
 cat samples.txt | parallel -j 2 sh RNA-seq_pipeline.sh {}
 ```
+:::
 
 This will take a while to run, but once complete you can use the `tree` command again to see the output files.
 
