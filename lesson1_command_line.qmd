@@ -741,7 +741,6 @@ We can now run Salmon to estimate expression levels of transcripts. Biases in se
 -   gcBias : correct GC bias in the data
 -   o : name of the output folder
 
-::: blue
 ``` bash
 mkdir salmon ## Make a folder for salmon output
 
@@ -750,7 +749,6 @@ salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/Con
 
 salmon quant -i annotation/hg38.cdna.ncrna.salmon.index -l SR -r trim_galore/MOV10_OE_1_trimmed.fq.gz -p 1 --seqBias --gcBias -o salmon/MOV10_OE_1
 ```
-:::
 
 The **library type** describes the type of reads used in the experiment. Here we have single (S), reverse-stranded (R) reads. Check the documentation for other arguments.
 

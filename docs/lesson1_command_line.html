@@ -878,14 +878,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>gcBias : correct GC bias in the data</li>
 <li>o : name of the output folder</li>
 </ul>
-<div class="blue">
 <div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> salmon <span class="co">## Make a folder for salmon output</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co">## Quantify expression with salmon</span></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> quant <span class="at">-i</span> annotation/hg38.cdna.ncrna.salmon.index <span class="at">-l</span> SR <span class="at">-r</span> trim_galore/Control_1_trimmed.fq.gz <span class="at">-p</span> 1 <span class="at">--seqBias</span> <span class="at">--gcBias</span> <span class="at">-o</span> salmon/Control_1</span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> quant <span class="at">-i</span> annotation/hg38.cdna.ncrna.salmon.index <span class="at">-l</span> SR <span class="at">-r</span> trim_galore/MOV10_OE_1_trimmed.fq.gz <span class="at">-p</span> 1 <span class="at">--seqBias</span> <span class="at">--gcBias</span> <span class="at">-o</span> salmon/MOV10_OE_1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 <p>The <strong>library type</strong> describes the type of reads used in the experiment. Here we have single (S), reverse-stranded (R) reads. Check the documentation for other arguments.</p>
 <p>The main output of Salmon is a <em>quant.sf</em> file, take a look at one of these files:</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> salmon/Control_1/quant.sf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
