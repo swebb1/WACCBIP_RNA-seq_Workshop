@@ -919,9 +919,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="final-reports" class="level3">
 <h3 class="anchored">Final reports</h3>
 <p>The last thing we want to do is to run <strong>MultiQC</strong> on our folder to compile the reports from Trim_galore, STAR and Salmon:</p>
-<div class="blue">
 <div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> <span class="at">-f</span> .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 <p><br></p>
 <div class="discussion">
 <h2 class="anchored" data-anchor-id="final-reports">
@@ -937,12 +935,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </section>
 <section id="tidy-up" class="level3">
 <h3 class="anchored" data-anchor-id="tidy-up">Tidy Up!</h3>
-<p>Files are large and disk space is expensive, remove any unwanted or temporary files from your folder. We should always keep the raw data (fastq) and our final processed datasets (BAM, bigWig, quant.sf etc) as well as the code we used to generate them. Where you can, convert files to compressed or binary formats to save space e.g.&nbsp;fq to fq.gz, SAM to BAM, wig to bigWig.</p>
-<div class="blue">
-
+<p>Files are large and disk space is expensive, remove any unwanted or temporary files from your folder. We should always keep the raw data (fastq) and our final processed datasets (BAM, bigWig, quant.sf etc) as well as the code we used to generate them. Where you can, convert files to compressed or binary formats to save space e.g.&nbsp;fq to fq.gz, SAM to BAM, wig to bigWig</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> trim_galore/<span class="pp">*</span>trim<span class="pp">*</span>fq.gz <span class="co">#Remove trimmed fastq temporary files</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> STAR/<span class="pp">*</span>.wig <span class="co">#Remove wig files once converted to bigWig</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div></section>
+</section>
 </section>
 <section id="shell-scripts-pipelining-and-parallelisation" class="level2">
 <h2 class="anchored" data-anchor-id="shell-scripts-pipelining-and-parallelisation">9. Shell scripts, pipelining and parallelisation</h2>

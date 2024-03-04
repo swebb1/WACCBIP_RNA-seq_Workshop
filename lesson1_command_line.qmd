@@ -791,11 +791,9 @@ The sequence composition of a transcript affects how many reads are sampled from
 
 The last thing we want to do is to run **MultiQC** on our folder to compile the reports from Trim_galore, STAR and Salmon:
 
-::: blue
 ``` bash
 multiqc -f .
 ```
-:::
 
 <br>
 
@@ -811,9 +809,7 @@ Take a look at the multiqc report in your public folder:
 
 ### Tidy Up!
 
-Files are large and disk space is expensive, remove any unwanted or temporary files from your folder. We should always keep the raw data (fastq) and our final processed datasets (BAM, bigWig, quant.sf etc) as well as the code we used to generate them. Where you can, convert files to compressed or binary formats to save space e.g. fq to fq.gz, SAM to BAM, wig to bigWig.
-
-<div class="blue">
+Files are large and disk space is expensive, remove any unwanted or temporary files from your folder. We should always keep the raw data (fastq) and our final processed datasets (BAM, bigWig, quant.sf etc) as well as the code we used to generate them. Where you can, convert files to compressed or binary formats to save space e.g. fq to fq.gz, SAM to BAM, wig to bigWig
 
 ``` bash
 rm trim_galore/*trim*fq.gz #Remove trimmed fastq temporary files
